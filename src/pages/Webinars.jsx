@@ -19,15 +19,16 @@ import {
 } from "lucide-react";
 import Footer from "./Footer";
 
-const API_BASE = "https://www.cakistockmarket.com/api/v1/"; // ✅ apna base URL
-
-
+const API_BASE = "https://www.cakistockmarket.com/api/v1/";
 
 const Webinars = () => {
   const [activeTab, setActiveTab] = useState("upcoming");
   const [webinars, setWebinars] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showAll, setShowAll] = useState(false); // new state
   const navigate = useNavigate();
+
+  const VISIBLE_LIMIT = 3; // kitne webinars initially show honge
 
   const specializations = [
     { name: "Market Analysis", icon: <FaChartLine />, active: true },
@@ -40,7 +41,6 @@ const Webinars = () => {
     { name: "Portfolio Review", icon: <FaBalanceScale /> },
   ];
 
-  // ✅ API se webinars fetch
   useEffect(() => {
     const fetchWebinars = async () => {
       try {
@@ -58,13 +58,16 @@ const Webinars = () => {
     fetchWebinars();
   }, []);
 
-  // ✅ Tabs ke hisaab se filter (case-insensitive)
   const filteredWebinars = webinars.filter(
     (webinar) => webinar.status?.toLowerCase() === activeTab
   );
 
+  const visibleWebinars = showAll
+    ? filteredWebinars
+    : filteredWebinars.slice(0, VISIBLE_LIMIT);
+
   const handleRegister = (webinar) => {
-    navigate("/checkout", { state: { webinar ,webinartype:'webinar'} });
+    navigate("/checkout", { state: { webinar, webinartype: "webinar" } });
   };
 
   return (
@@ -108,14 +111,13 @@ const Webinars = () => {
 
         {/* Loading State */}
         {loading && <p className="text-gray-600">Loading webinars...</p>}
-
-        {/* Webinars List */}
         {!loading && filteredWebinars.length === 0 && (
           <p className="text-gray-600">No webinars found for this category.</p>
         )}
 
+        {/* Webinars List */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filteredWebinars.map((webinar) => (
+          {visibleWebinars.map((webinar) => (
             <div
               key={webinar._id}
               className="bg-white rounded-lg shadow-md border border-gray-200 flex flex-col justify-between transition-transform hover:shadow-lg hover:-translate-y-1 duration-200 h-full"
@@ -189,7 +191,10 @@ const Webinars = () => {
                   {webinar.price > 0 ? `₹${webinar.price}` : "Free"}
                 </div>
                 <div className="flex items-center space-x-3">
-                  <button onClick={() => handleRegister(webinar)} className="px-4 py-2 rounded-md text-xs font-medium flex items-center space-x-1 bg-yellow-400 hover:bg-yellow-500 text-gray-900 transition-colors">
+                  <button
+                    onClick={() => handleRegister(webinar)}
+                    className="px-4 py-2 rounded-md text-xs font-medium flex items-center space-x-1 bg-yellow-400 hover:bg-yellow-500 text-gray-900 transition-colors"
+                  >
                     {webinar.price > 0 ? "Register Now" : "Register Free"}
                   </button>
                 </div>
@@ -199,15 +204,20 @@ const Webinars = () => {
         </div>
 
         {/* Show More Button */}
-        <div className="flex justify-center mt-6">
-          <button className="flex items-center space-x-1 text-blue-600 hover:text-blue-800 font-medium text-sm transition-colors">
-            <span>Show More Webinars</span>
-            <ChevronDown className="w-4 h-4" />
-          </button>
-        </div>
+        {filteredWebinars.length > VISIBLE_LIMIT && (
+          <div className="flex justify-center mt-6">
+            <button
+              onClick={() => setShowAll(!showAll)}
+              className="flex items-center space-x-1 text-blue-600 hover:text-blue-800 font-medium text-sm transition-colors"
+            >
+              <span>{showAll ? "Show Less Webinars" : "Show More Webinars"}</span>
+              <ChevronDown className="w-4 h-4" />
+            </button>
+          </div>
+        )}
 
         {/* Browse by specialization */}
-        <section className="w-full  px-4 sm:px-6 lg:px-8 mt-10 mb-16">
+        <section className="w-full px-4 sm:px-6 lg:px-8 mt-10 mb-16">
           <h2 className="text-md font-bold text-gray-800 mb-8 text-left">
             Browse by Specialization
           </h2>

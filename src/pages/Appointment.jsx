@@ -5,11 +5,9 @@ import "react-big-calendar/lib/css/react-big-calendar.css";
 import {
   getServices,
   getAvailability,
-  createBooking,
-  confirmPayment,
+  createBooking
 } from "../Api/bookings/bookings";
 import ApiLogin from "../Api/bookings/auth.js";
-import { sendBookingEmails } from "../Api/notification/notifications";
 import { useNavigate } from "react-router-dom";
 
 const localizer = momentLocalizer(moment);
@@ -25,13 +23,8 @@ export default function AppointmentPage() {
   const [selectedService, setSelectedService] = useState(null);
   const [slotsForDate, setSlotsForDate] = useState([]);
   const [selectedSlot, setSelectedSlot] = useState(null);
-  const [bookingInfo, setBookingInfo] = useState(null);
-  const [isLoading, setIsLoading] = useState(false); // Added for loading states
-
-  // Auth state
+  const [isLoading, setIsLoading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  // Login modal
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState("");
@@ -43,69 +36,56 @@ export default function AppointmentPage() {
     setIsAuthenticated(Boolean(token));
   }, []);
 
-const doLogin = async (form) => {
-  console.log("Trying login with:", loginForm.email, loginForm.password);
+  const doLogin = async (form) => {
+    if (!form.email || !form.password) {
+      setLoginError("Please enter both email and password");
+      return;
+    }
+    if (!/\S+@\S+\.\S+/.test(form.email)) {
+      setLoginError("Please enter a valid email address");
+      return;
+    }
 
-  if (!form.email || !form.password) {
-    setLoginError("Please enter both email and password");
-    return;
-  }
-  if (!/\S+@\S+\.\S+/.test(form.email)) {
-    setLoginError("Please enter a valid email address");
-    return;
-  }
+    setLoginLoading(true);
+    setLoginError("");
 
-  setLoginLoading(true);
-  setLoginError("");
+    try {
+      const data = await ApiLogin(form);
+      const token = data?.token ?? localStorage.getItem("token") ?? data?.accessToken ?? data?.jwt ?? null;
 
-  try {
-    const data = await ApiLogin(form);
-    console.log("ApiLogin returned:", data);
-
-    // token: prefer returned token else localStorage (auth.js may already have stored it)
-    const token = data?.token ?? localStorage.getItem("token") ?? data?.accessToken ?? data?.jwt ?? null;
-
-    if (token) {
-      localStorage.setItem("token", token);
-      localStorage.setItem("accessToken", token);
-    } else {
-      // server might be using httpOnly cookie — treat login as success if API indicates success or user present
-      if (!(data?.success || data?.user || data?._id)) {
-        throw new Error("Login failed: no token and no user info returned");
+      if (token) {
+        localStorage.setItem("token", token);
+        localStorage.setItem("accessToken", token);
       }
-    }
 
-    // Normalize user
-    const user = data?.user ?? data;
-    if (user) {
-      if (user._id || user.id) localStorage.setItem("userId", user._id ?? user.id);
-      if (user.name) localStorage.setItem("userName", user.name);
-      if (user.email) localStorage.setItem("userEmail", user.email);
-      try {
-        localStorage.setItem("user", JSON.stringify(user));
-      } catch (e) {
-        // ignore
+      const user = data?.user ?? data;
+      if (user) {
+        if (user._id || user.id) localStorage.setItem("userId", user._id ?? user.id);
+        if (user.name) localStorage.setItem("userName", user.name);
+        if (user.email) localStorage.setItem("userEmail", user.email);
+        try {
+          localStorage.setItem("user", JSON.stringify(user));
+        } catch (e) {}
       }
-    }
 
-    setIsAuthenticated(true);
-    setShowLoginModal(false);
+      setIsAuthenticated(true);
+      setShowLoginModal(false);
 
-    if (typeof postLoginAction === "function") {
-      postLoginAction();
-      setPostLoginAction(null);
+      if (typeof postLoginAction === "function") {
+        postLoginAction();
+        setPostLoginAction(null);
+      }
+    } catch (err) {
+      console.error("Login failed", err);
+      const message =
+        err.response?.status === 401
+          ? "Invalid email or password"
+          : err.response?.data?.message || err.message || "Login failed";
+      setLoginError(message);
+    } finally {
+      setLoginLoading(false);
     }
-  } catch (err) {
-    console.error("Login failed", err);
-    const message =
-      err.response?.status === 401
-        ? "Invalid email or password"
-        : err.response?.data?.message || err.message || "Login failed";
-    setLoginError(message);
-  } finally {
-    setLoginLoading(false);
-  }
-};
+  };
 
   const openLoginModal = (afterLoginAction = null) => {
     setLoginError("");
@@ -114,17 +94,16 @@ const doLogin = async (form) => {
     setPostLoginAction(() => afterLoginAction ?? null);
   };
 
-const requireAuthInline = (actionIfAuthenticated) => {
-  const token = localStorage.getItem("token") || localStorage.getItem("accessToken");
-  if (!token) {
-    openLoginModal(actionIfAuthenticated);
-    return false;
-  }
-  setIsAuthenticated(true);
-  if (typeof actionIfAuthenticated === "function") actionIfAuthenticated();
-  return true;
-};
-
+  const requireAuthInline = (actionIfAuthenticated) => {
+    const token = localStorage.getItem("token") || localStorage.getItem("accessToken");
+    if (!token) {
+      openLoginModal(actionIfAuthenticated);
+      return false;
+    }
+    setIsAuthenticated(true);
+    if (typeof actionIfAuthenticated === "function") actionIfAuthenticated();
+    return true;
+  };
 
   useEffect(() => {
     (async () => {
@@ -155,9 +134,7 @@ const requireAuthInline = (actionIfAuthenticated) => {
         const raw = await getAvailability(serviceId, month);
         const payload = raw && raw.result ? raw.result : raw;
         const slots = Array.isArray(payload) ? payload : [];
-        const dayIso = moment(selectedDate)
-          .utcOffset(0, true)
-          .format("YYYY-MM-DD");
+        const dayIso = moment(selectedDate).utcOffset(0, true).format("YYYY-MM-DD");
 
         const filtered = slots
           .map((s) => {
@@ -171,10 +148,7 @@ const requireAuthInline = (actionIfAuthenticated) => {
               id: s._id ?? s.id,
             };
           })
-          .filter(
-            (s) =>
-              s._startDate && s.sDayUtc === dayIso && (s.seatsLeft ?? 0) > 0
-          );
+          .filter((s) => s._startDate && s.sDayUtc === dayIso && (s.seatsLeft ?? 0) > 0);
 
         const unique = [];
         const seen = new Set();
@@ -204,90 +178,62 @@ const requireAuthInline = (actionIfAuthenticated) => {
   }, [selectedDate, selectedService]);
 
   const handleSelectSlotOnCalendar = (slotInfo) => {
+    const clickedDate = moment(slotInfo.start).startOf("day");
+    const today = moment().startOf("day");
+
+    if (clickedDate.isBefore(today)) {
+      alert("You cannot book a past date!");
+      return;
+    }
+
     setSelectedDate(slotInfo.start);
     setSelectedSlot(null);
   };
 
-  const handleStartBooking = async () => {
-    const ok = requireAuthInline();
-    if (!ok) return;
-    if (!selectedService || !selectedSlot) {
-      alert("Please choose a service and slot");
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const userId = localStorage.getItem("userId");
-      if (!userId) throw new Error("User ID not found");
-
-      const createRes = await createBooking({
-        serviceId: selectedService._id ?? selectedService.id,
-        slotId: selectedSlot.id,
-        paymentMethod: "mock",
-        userId,
-      });
-      const result = createRes.result ?? createRes;
-      setBookingInfo(result);
-
-      await confirmPayment({
-        bookingId: result.bookingId,
-        paymentRef: result.paymentRef,
-        status: "success",
-      });
-
-      const payload = {
-        bookingId: result.bookingId ?? result.id ?? null,
-        serviceName: selectedService?.name ?? "",
-        date: moment(selectedDate).format("YYYY-MM-DD"),
-        slotLabel: selectedSlot?.label ?? "",
-        amount: result.amount ?? selectedService?.price ?? 0,
-        user: {
-          name: result.userName ?? localStorage.getItem("userName") ?? null,
-          email:
-            result.userEmail ??
-            localStorage.getItem("userEmail") ??
-            loginForm.email ??
-            null,
-        },
-        consultant: {
-          name:
-            selectedService?.consultantName ??
-            selectedService?.consultant?.name ??
-            selectedService?.providerName ??
-            null,
-          email:
-            selectedService?.consultant?.email ??
-            selectedService?.consultantEmail ??
-            selectedService?.providerEmail ??
-            null,
-        },
-      };
-
+  const handleProceedToCheckout = async () => {
+    requireAuthInline(async () => {
+      setIsLoading(true);
       try {
-        if (payload.user?.email) {
-          await sendBookingEmails(payload);
-        } else {
-          console.warn("No user email available - skipping email send");
-          alert("Booking successful, but no email sent due to missing user email");
-        }
-      } catch (mailErr) {
-        console.error("sendBookingEmails failed", mailErr);
-      }
+        const token = localStorage.getItem("token") || localStorage.getItem("accessToken");
+        const bookingPayload = {
+          serviceId: selectedService?._id ?? selectedService?.id,
+          slotId: selectedSlot?.id,
+          date: moment(selectedDate).format("YYYY-MM-DD"),
+          userId:"68b1a01074ad0c19f272b438"
+        };
 
-      alert("Booking successful! Confirmation email (if available) sent.");
-      setStep(4);
-    } catch (e) {
-      console.error("Booking failed", e);
-      alert("Booking failed: " + (e?.response?.data?.message ?? e?.message));
-    } finally {
-      setIsLoading(false);
-    }
+        const bookingResult = await createBooking(bookingPayload, token);
+         
+        if (!bookingResult || !bookingResult.bookingId) {
+          alert("Booking creation failed");
+          return;
+        }
+
+        navigate("/checkout", {
+          state: {
+            appointmenttype: "appointment",
+            appointmentId: bookingResult.bookingId,
+            title: selectedService?.name,
+            description: `Appointment on ${moment(selectedDate).format("DD MMM YYYY")} at ${selectedSlot?.label}`,
+            price: selectedService?.price || 0,
+            slot: selectedSlot,
+            date: selectedDate,
+            serviceId: selectedService?._id ?? selectedService?.id,
+          },
+        });
+      } catch (err) {
+        console.error(err);
+        alert("Booking creation failed");
+      } finally {
+        setIsLoading(false);
+      }
+    });
   };
 
   return (
     <div className="px-4 pt-5 md:py-12 bg-gray-50 min-h-screen mt-10">
       <div className="max-w-6xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden flex flex-col md:flex-row h-[700px]">
+        {/* Left Menu */}
         <div className="w-full md:w-1/4 bg-gray-100 border-r p-4 md:p-6 space-y-4 md:space-y-6">
           {["Service", "Schedule", "Payment", "Confirm"].map((label, i) => (
             <div
@@ -328,6 +274,7 @@ const requireAuthInline = (actionIfAuthenticated) => {
           )}
         </div>
 
+        {/* Main Step Content */}
         <div className="flex-1 p-6 overflow-auto">
           {isLoading && (
             <div className="text-center">
@@ -335,6 +282,7 @@ const requireAuthInline = (actionIfAuthenticated) => {
             </div>
           )}
 
+          {/* Step 1: Select Service */}
           {step === 1 && !isLoading && (
             <>
               <h2 className="text-xl font-semibold mb-4">Choose a Service</h2>
@@ -368,6 +316,7 @@ const requireAuthInline = (actionIfAuthenticated) => {
             </>
           )}
 
+          {/* Step 2: Select Date & Slot */}
           {step === 2 && !isLoading && (
             <>
               <h2 className="text-xl font-semibold mb-4">Choose Date & Time</h2>
@@ -384,19 +333,12 @@ const requireAuthInline = (actionIfAuthenticated) => {
                 style={{ height: 400 }}
                 selectable
                 date={date}
+                view={Views.MONTH}
+                views={[Views.MONTH]}
                 onNavigate={(newDate) => setDate(newDate)}
-                view={view}
-                onView={(newView) => setView(newView)}
                 onSelectSlot={handleSelectSlotOnCalendar}
-                components={{
-                  toolbar: (props) => (
-                    <div style={{ padding: "8px" }}>
-                      <strong>{props.label}</strong>
-                    </div>
-                  ),
-                }}
+                onDrillDown={(date, view) => setSelectedDate(date)}
               />
-
               {selectedDate && (
                 <>
                   <h3 className="font-medium mt-4 mb-2">
@@ -422,9 +364,7 @@ const requireAuthInline = (actionIfAuthenticated) => {
                             <div className="flex items-center justify-between">
                               <span>{slot.label}</span>
                               <small className="text-xs">
-                                {isFull
-                                  ? "Full"
-                                  : `${slot.seatsLeft ?? 1} left`}
+                                {isFull ? "Full" : `${slot.seatsLeft ?? 1} left`}
                               </small>
                             </div>
                           </button>
@@ -438,7 +378,6 @@ const requireAuthInline = (actionIfAuthenticated) => {
                   </div>
                 </>
               )}
-
               <div className="mt-6 flex justify-between">
                 <button
                   onClick={() => setStep(1)}
@@ -448,13 +387,7 @@ const requireAuthInline = (actionIfAuthenticated) => {
                 </button>
                 <button
                   disabled={!selectedDate || !selectedSlot}
-                  onClick={() => {
-                    if (!isAuthenticated) {
-                      openLoginModal(() => setStep(3));
-                      return;
-                    }
-                    setStep(3);
-                  }}
+                  onClick={() => setStep(3)}
                   className="px-6 py-2 rounded-lg bg-yellow-400 hover:bg-yellow-500 text-black disabled:opacity-50"
                 >
                   Next: Payment
@@ -463,6 +396,7 @@ const requireAuthInline = (actionIfAuthenticated) => {
             </>
           )}
 
+          {/* Step 3: Payment */}
           {step === 3 && !isLoading && (
             <>
               <h2 className="text-xl font-semibold mb-4">Payment Details</h2>
@@ -470,17 +404,9 @@ const requireAuthInline = (actionIfAuthenticated) => {
                 {!isAuthenticated ? (
                   <div className="p-4 bg-red-50 border border-red-100 rounded text-sm text-red-700">
                     You must be logged in to complete booking.
-                    <div className="mt-2">
-                      <button
-                        onClick={() => openLoginModal(handleStartBooking)}
-                        className="px-3 py-1 bg-yellow-400 rounded"
-                      >
-                        Login & Continue
-                      </button>
-                    </div>
                   </div>
                 ) : (
-                  <p>Mock payment flow — click Confirm to simulate payment.</p>
+                  <p>Proceed to checkout to complete your payment.</p>
                 )}
               </div>
               <div className="mt-6 flex justify-between">
@@ -491,75 +417,37 @@ const requireAuthInline = (actionIfAuthenticated) => {
                   Back
                 </button>
                 <button
-                  onClick={() => requireAuthInline(handleStartBooking)}
+                  onClick={handleProceedToCheckout}
                   className="px-6 py-2 rounded-lg bg-yellow-400 hover:bg-yellow-500 text-black"
                   disabled={isLoading}
                 >
-                  Pay & Confirm
+                  Proceed to Checkout
                 </button>
               </div>
             </>
           )}
 
+          {/* Step 4: Confirm */}
           {step === 4 && !isLoading && (
             <div className="text-center">
               <h2 className="text-2xl font-bold text-green-600 mb-4">
                 🎉 Booking Confirmed!
               </h2>
-              <p className="mb-2">
-                <strong>Service:</strong> {selectedService?.name}
-              </p>
-              <p className="mb-2">
-                <strong>Date:</strong>{" "}
-                {moment(selectedDate).format("DD MMM YYYY")}
-              </p>
-              <p className="mb-2">
-                <strong>Slot:</strong> {selectedSlot?.label}
-              </p>
-              <p className="mb-4">
-                A confirmation email has been sent if we have your email. You can
-                also view/manage appointments in your dashboard.
-              </p>
-
-              <div className="flex items-center justify-center gap-3">
-                {/* <button
-                  onClick={() => (window.location.href = "/user-dashboard")}
-                  className="px-6 py-2 rounded-lg bg-indigo-600 text-white"
-                >
-                  Go to My Dashboard
-                </button> */}
-                <button
-                  onClick={() => {
-                    setStep(1);
-                    setSelectedService(null);
-                    setSelectedDate(null);
-                    setSelectedSlot(null);
-                    setBookingInfo(null);
-                  }}
-                  className="px-6 py-2 rounded-lg border"
-                >
-                  Book Another
-                </button>
-              </div>
             </div>
           )}
         </div>
       </div>
 
+      {/* Login Modal */}
       {showLoginModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-6">
             <h3 className="text-lg font-semibold mb-2">Login to continue</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              Enter your credentials — you'll stay on this page.
-            </p>
-
             {loginError && (
               <div className="mb-4 p-2 bg-red-50 text-red-700 text-sm rounded">
                 {loginError}
               </div>
             )}
-
             <div className="space-y-3">
               <div>
                 <label className="text-xs text-gray-600">Email</label>
@@ -573,7 +461,6 @@ const requireAuthInline = (actionIfAuthenticated) => {
                   placeholder="you@example.com"
                 />
               </div>
-
               <div>
                 <label className="text-xs text-gray-600">Password</label>
                 <input
@@ -586,17 +473,7 @@ const requireAuthInline = (actionIfAuthenticated) => {
                   placeholder="••••••••"
                 />
               </div>
-
-              <div className="text-sm">
-                <a
-                  href="/forgot-password"
-                  className="text-blue-600 hover:underline"
-                >
-                  Forgot Password?
-                </a>
-              </div>
             </div>
-
             <div className="mt-4 flex justify-between items-center">
               <button
                 onClick={() => setShowLoginModal(false)}
@@ -605,7 +482,6 @@ const requireAuthInline = (actionIfAuthenticated) => {
               >
                 Cancel
               </button>
-
               <button
                 onClick={() => doLogin(loginForm)}
                 className="px-4 py-2 rounded bg-yellow-400 hover:bg-yellow-500 text-black"

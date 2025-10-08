@@ -14,6 +14,14 @@ export default function CourseHero() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+
+  function extractYoutubeID(url) {
+  const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/ ]{11})/;
+  const match = url.match(regex);
+  return match ? match[1] : null;
+}
+
+
   // ✅ API se courses fetch karna
   useEffect(() => {
     const fetchCourses = async () => {
@@ -119,8 +127,11 @@ export default function CourseHero() {
             key={course._id}
             className="rounded-xl shadow-md hover:shadow-lg transition overflow-hidden flex flex-col"
           >
+
+
+            
             {/* Image */}
-            <div className="relative">
+            {/* <div className="relative">
               <img
                 src={course.image || cardImage}
                 alt={course.title}
@@ -132,7 +143,62 @@ export default function CourseHero() {
               <span className="absolute top-2 right-2 bg-black text-white text-xs px-2 py-1 rounded">
                 {course.level || "Beginner"}
               </span>
-            </div>
+            </div> */}
+
+{/* <div className="relative">
+  {course.videoUrl ? (
+    <iframe
+      className="w-full h-36 sm:h-44 object-cover"
+      src={`https://www.youtube.com/embed/${extractYoutubeID(course.videoUrl)}`}
+      title={course.title}
+      frameBorder="0"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowFullScreen
+    ></iframe>
+  ) : (
+    <img
+      src={course.image || cardImage}
+      alt={course.title}
+      className="w-full h-36 sm:h-44 object-cover"
+    />
+  )}
+
+  <span className="absolute top-2 left-2 bg-yellow-400 text-xs px-2 py-1 rounded">
+    {activeTab === "recorded" ? "Self-Paced" : "Live Course"}
+  </span>
+  <span className="absolute top-2 right-2 bg-black text-white text-xs px-2 py-1 rounded">
+    {course.level || "Beginner"}
+  </span>
+</div> */}
+
+{/* Video Embed */}
+<div className="relative">
+  {course.youtubeVideoId ? (
+    <iframe
+      className="w-full h-36 sm:h-44 object-cover"
+      src={`https://www.youtube.com/embed/${course.youtubeVideoId}`}
+      title={course.title}
+      frameBorder="0"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowFullScreen
+    ></iframe>
+  ) : (
+    <img
+      src={course.image || cardImage}
+      alt={course.title}
+      className="w-full h-36 sm:h-44 object-cover"
+    />
+  )}
+
+  <span className="absolute top-2 left-2 bg-yellow-400 text-xs px-2 py-1 rounded">
+    {activeTab === "recorded" ? "Self-Paced" : "Live Course"}
+  </span>
+  <span className="absolute top-2 right-2 bg-black text-white text-xs px-2 py-1 rounded">
+    {course.level || "Beginner"}
+  </span>
+</div>
+
+
 
             {/* Content */}
             <div className="flex-1 flex flex-col justify-between">

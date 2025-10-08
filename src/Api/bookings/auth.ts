@@ -32,7 +32,7 @@ export default async function ApiLogin({ email, password }: { email: string; pas
   const user = data?.user ?? (data && (data._id || data.id) ? data : null);
   if (user) {
     if (user._id || user.id) localStorage.setItem("userId", user._id ?? user.id);
-    if (user.name) localStorage.setItem("userName", user.name);
+    if (user.name) localStorage.setItem("name", user.name);
     if (user.email) localStorage.setItem("userEmail", user.email);
     try {
       localStorage.setItem("user", JSON.stringify(user));
