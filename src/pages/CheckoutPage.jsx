@@ -36,22 +36,24 @@ export default function CheckoutPage() {
   const toast = useToasts();
   console.log("CheckoutPage location.state:", location.state);
 
-  const item = location.state?.course || {
-    id: "demo-1",
-    title: "Master React — Complete Guide",
-    description: "Modern React from zero to pro.",
-    price: 1299,
-    duration: "9h 12m",
-    rating: 4.9,
-    students: 15840,
-    thumbnail: fallbackThumb,
-  };
+ const item = location.state?.course || location.state?.webinar || location.state?.appointment || {
+  id: "demo-1",
+  title: "Master React — Complete Guide",
+  description: "Modern React from zero to pro.",
+  price: 1299,
+  duration: "9h 12m",
+  rating: 4.9,  
+  students: 15840,
+  thumbnail: fallbackThumb,
+};
+  
 
   const preparedItem = { ...item };
   if (location.state?.coursetype) preparedItem.courseId = item._id || item.id;
   else if (location.state?.webinartype) preparedItem.webinarId = item._id || item.id;
   else if (location.state?.appointmenttype) preparedItem.appointmentId = location.state?.appointmentId || item.id;
- console.log("preparedItem:", preparedItem.appointmentId);
+   else if (location.state?.appointmenttype) preparedItem.price = location.state?.price || item.id;
+ console.log("preparedItem:", preparedItem);
   const [dark, setDark] = useState(false);
   const [step, setStep] = useState("details");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -67,6 +69,7 @@ export default function CheckoutPage() {
   const [orderData, setOrderData] = useState(null);
 
   const net = Math.max(0, (Number(preparedItem.price) || 0) - (Number(discount) || 0));
+  console.log("Net amount:", net);
   const formattedNet = useMemo(() => formatINR(net), [net]);
   const studentsDisplay = useMemo(() => (preparedItem?.students ?? 0).toLocaleString(), [preparedItem]);
 
@@ -132,7 +135,7 @@ export default function CheckoutPage() {
         courseId: preparedItem.courseId,
         appointmentId: preparedItem.appointmentId,
         itemType: location.state?.coursetype ? "course" : location.state?.webinartype ? "webinar" : location.state?.appointmenttype ? "appointment" : "course",
-        amount: location.state.price,
+        amount:net,
         userId: "68b1a01074ad0c19f272b438",
       };
 
