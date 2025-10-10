@@ -13,15 +13,15 @@ import config from "./config";
 
 function LoginPage() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("mobile");
+  const [activeTab, setActiveTab] = useState("email");
   const [formData, setFormData] = useState({
     email: "",
     mobile: "",
     password: "",
-    
+    role: "",
   });
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false); // ✅ toggle password visibility
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -38,6 +38,10 @@ function LoginPage() {
     }
     if (!formData.password) {
       Swal.fire("Error", "Please enter your password", "error");
+      return;
+    }
+    if (!formData.role) {
+      Swal.fire("Error", "Please select your role", "error");
       return;
     }
 
@@ -64,19 +68,35 @@ function LoginPage() {
         }
       );
 
-      const user = response.data.result.user;
-      Swal.fire("Success", response.data.message, "success");
-      localStorage.setItem("accessToken", response.data.result.accessToken);
-      localStorage.setItem("refreshToken", response.data.result.refreshToken);
-      localStorage.setItem("user", JSON.stringify(response.data.result.user));
+      const user = response.data.result?.user;
 
-      if (user.role === "admin") navigate("/admin-dashboard");
-      else navigate("/user-dashboard");
+      if (response.data.message === "Invalid credentials") {
+        Swal.fire("Error", response.data.message, "error");
+        return;
+      }
+     console.log("Login Response:", response.data.result);
+      // Store tokens
+      localStorage.setItem("accessToken", response.data.result?.accessToken);
+      localStorage.setItem("refreshToken", response.data.result?.refreshToken);
+        localStorage.setItem("user", JSON.stringify(response.data.result?.user));
+
+      // Role-based storage
+      if (user?.role === "admin") {
+        localStorage.setItem("admin", user._id);
+        localStorage.setItem("adminId", user._id);
+        navigate("/admin-dashboard");
+      }
+
+      if (user?.role === "user") {
+        localStorage.setItem("user", JSON.stringify(user));
+        localStorage.setItem("userId", user._id);
+        navigate("/user-dashboard");
+      }
     } catch (error) {
       if (error.response)
         Swal.fire(
           "Error",
-          error.response.data.message || "Login failed",
+          error.response.data.message[0] || "Login failed",
           "error"
         );
       else if (error.request)
@@ -94,22 +114,16 @@ function LoginPage() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50 px-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-6 sm:p-8 lg:p-10">
-        {/* Header */}
         <div className="text-center mb-6">
           <h2 className="text-2xl text-gray-800">Welcome Back</h2>
-          <p className="text-gray-500 text-sm">
-            Sign in to access your dashboard
-          </p>
+          <p className="text-gray-500 text-sm">Sign in to access your dashboard</p>
         </div>
 
-        {/* Tabs */}
         <div className="flex rounded-lg bg-gray-100 mb-6">
           <button
             onClick={() => setActiveTab("email")}
             className={`flex-1 py-2 text-sm rounded-lg ${
-              activeTab === "email"
-                ? "bg-white shadow text-gray-800"
-                : "text-gray-500"
+              activeTab === "email" ? "bg-white shadow text-gray-800" : "text-gray-500"
             }`}
           >
             <div className="flex items-center justify-center gap-2">
@@ -119,9 +133,7 @@ function LoginPage() {
           <button
             onClick={() => setActiveTab("mobile")}
             className={`flex-1 py-2 text-sm rounded-lg ${
-              activeTab === "mobile"
-                ? "bg-white shadow text-gray-800"
-                : "text-gray-500"
+              activeTab === "mobile" ? "bg-white shadow text-gray-800" : "text-gray-500"
             }`}
           >
             <div className="flex items-center justify-center gap-2">
@@ -130,7 +142,6 @@ function LoginPage() {
           </button>
         </div>
 
-        {/* Form */}
         <form className="space-y-4" onSubmit={handleLogin}>
           {activeTab === "mobile" && (
             <div>
@@ -166,7 +177,6 @@ function LoginPage() {
             </div>
           )}
 
-          {/* Password */}
           <div>
             <label className="text-sm text-gray-700">Password</label>
             <div className="relative mt-1">
@@ -192,6 +202,7 @@ function LoginPage() {
               </button>
             </div>
           </div>
+
           <div>
             <label className="text-sm text-gray-700">Role</label>
             <div className="relative mt-1">
@@ -208,14 +219,12 @@ function LoginPage() {
             </div>
           </div>
 
-          {/* Forgot Password */}
           <div className="flex justify-end">
             <a href="#" className="text-sm text-orange-600 hover:underline">
               Forgot Password?
             </a>
           </div>
 
-          {/* Sign In Button */}
           <button
             type="submit"
             disabled={loading}
@@ -225,10 +234,8 @@ function LoginPage() {
           </button>
         </form>
 
-        {/* Divider */}
         <div className="border-t my-6"></div>
 
-        {/* Footer */}
         <p className="text-center text-sm text-gray-600">
           New to CA ki Stock Market?{" "}
           <button
@@ -240,11 +247,6 @@ function LoginPage() {
           </button>
         </p>
       </div>
-
-      {/* Security Note */}
-      <p className="absolute  bottom-0 text-xs text-gray-500 text-center px-4">
-        {/* Your data is protected with bank-level security */}
-      </p>
     </div>
   );
 }

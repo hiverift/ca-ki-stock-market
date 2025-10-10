@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaStar, FaRegClock } from "react-icons/fa";
+import { FaStar, FaRegClock, FaLock } from "react-icons/fa";
 import { MdGroup } from "react-icons/md";
 import { CiSearch, CiFilter } from "react-icons/ci";
 import cardImage from "../assets/image/card.jpg";
-import config from "../pages/config"; // ✅ works in Vite
+import config from "../pages/config";
 
 export default function CourseHero() {
   const [activeTab, setActiveTab] = useState("live");
@@ -14,21 +14,24 @@ export default function CourseHero() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  // Mock user enrollment/subscription status (replace with actual logic)
+  const [user] = useState({
+    isEnrolled: false, // Replace with actual enrollment check
+    isSubscribed: false, // Replace with actual subscription check
+  });
 
   function extractYoutubeID(url) {
-  const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/ ]{11})/;
-  const match = url.match(regex);
-  return match ? match[1] : null;
-}
+    const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/ ]{11})/;
+    const match = url.match(regex);
+    return match ? match[1] : null;
+  }
 
-
-  // ✅ API se courses fetch karna
+  // API to fetch courses
   useEffect(() => {
     const fetchCourses = async () => {
       try {
         const res = await fetch(`${config.BASE_URL}courses/getAllCourses`);
         const data = await res.json();
-        console.log(data)
         const liveCourses = data.result.filter((course) => course.mode === "Live");
         const recordedCourses = data.result.filter((course) => course.mode === "Recorded");
 
@@ -46,24 +49,24 @@ export default function CourseHero() {
     fetchCourses();
   }, []);
 
-  // ✅ Search ke basis par filter
+  // Filter courses based on search term
   useEffect(() => {
     const courses = coursesData[activeTab];
-    const filtered = courses.filter((course) =>
-      course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      course.instructor?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      course.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    const filtered = courses.filter(
+      (course) =>
+        course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        course.instructor?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        course.description?.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredCourses(filtered);
   }, [searchTerm, activeTab, coursesData]);
 
-  // ✅ Enroll button → checkout page
+  // Handle enroll button
   const handleEnroll = (course) => {
-    
-    navigate("/checkout", { state: { course ,coursetype:'course'} });
+    navigate("/checkout", { state: { course, coursetype: "course" } });
   };
 
-  // ✅ Loading state
+  // Loading state
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -74,7 +77,6 @@ export default function CourseHero() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-20 space-y-6">
-
       {/* Search & Filter Section */}
       <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
         <div className="flex items-center w-full sm:w-64 border border-gray-300 rounded-lg shadow-sm px-3 py-2 bg-white focus-within:ring-2 focus-within:ring-gray-400">
@@ -101,9 +103,7 @@ export default function CourseHero() {
         <button
           onClick={() => setActiveTab("live")}
           className={`px-4 py-2 rounded-lg text-sm font-medium ${
-            activeTab === "live"
-              ? "bg-yellow-400 text-black"
-              : "bg-gray-100 text-gray-600"
+            activeTab === "live" ? "bg-yellow-400 text-black" : "bg-gray-100 text-gray-600"
           }`}
         >
           Live Courses
@@ -111,9 +111,7 @@ export default function CourseHero() {
         <button
           onClick={() => setActiveTab("recorded")}
           className={`px-4 py-2 rounded-lg text-sm font-medium ${
-            activeTab === "recorded"
-              ? "bg-yellow-400 text-black"
-              : "bg-gray-100 text-gray-600"
+            activeTab === "recorded" ? "bg-yellow-400 text-black" : "bg-gray-100 text-gray-600"
           }`}
         >
           Recorded Courses
@@ -127,86 +125,64 @@ export default function CourseHero() {
             key={course._id}
             className="rounded-xl shadow-md hover:shadow-lg transition overflow-hidden flex flex-col"
           >
+            {/* Video Embed */}
+            <div className="relative">
+              {user.isEnrolled || user.isSubscribed ? (
+                // Show video if enrolled or subscribed
+                course.youtubeVideoId ? (
+                  <iframe
+                    className="w-full h-36 sm:h-44 object-cover"
+                    src={`https://www.youtube.com/embed/${course.youtubeVideoId}`}
+                    title={course.title}
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  ></iframe>
+                ) : (
+                  <img
+                    src={course.image || cardImage}
+                    alt={course.title}
+                    className="w-full h-36 sm:h-44 object-cover"
+                  />
+                )
+              ) : (
+                // Show locked overlay with video thumbnail or image
+                <div className="relative w-full h-36 sm:h-44">
+                  <img
+                    src={
+                      course.youtubeVideoId
+                        ? `https://img.youtube.com/vi/${course.youtubeVideoId}/hqdefault.jpg`
+                        : course.image || cardImage
+                    }
+                    alt={course.title}
+                    className="w-full h-full object-cover opacity-50" // Dim the image
+                  />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <FaLock className="text-white text-3xl" />
+                    <p className="text-black font-bold text-sm mt-2">Enroll or Subscribe to Unlock</p>
+                    <button
+                      onClick={() => handleEnroll(course)}
+                      className="mt-2 bg-yellow-400 hover:bg-yellow-500 px-3 py-1 rounded-lg text-sm text-black"
+                    >
+                      Enroll Now
+                    </button>
+                  </div>
+                </div>
+              )}
 
-
-            
-            {/* Image */}
-            {/* <div className="relative">
-              <img
-                src={course.image || cardImage}
-                alt={course.title}
-                className="w-full h-36 sm:h-44 object-cover"
-              />
               <span className="absolute top-2 left-2 bg-yellow-400 text-xs px-2 py-1 rounded">
                 {activeTab === "recorded" ? "Self-Paced" : "Live Course"}
               </span>
               <span className="absolute top-2 right-2 bg-black text-white text-xs px-2 py-1 rounded">
                 {course.level || "Beginner"}
               </span>
-            </div> */}
-
-{/* <div className="relative">
-  {course.videoUrl ? (
-    <iframe
-      className="w-full h-36 sm:h-44 object-cover"
-      src={`https://www.youtube.com/embed/${extractYoutubeID(course.videoUrl)}`}
-      title={course.title}
-      frameBorder="0"
-      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-      allowFullScreen
-    ></iframe>
-  ) : (
-    <img
-      src={course.image || cardImage}
-      alt={course.title}
-      className="w-full h-36 sm:h-44 object-cover"
-    />
-  )}
-
-  <span className="absolute top-2 left-2 bg-yellow-400 text-xs px-2 py-1 rounded">
-    {activeTab === "recorded" ? "Self-Paced" : "Live Course"}
-  </span>
-  <span className="absolute top-2 right-2 bg-black text-white text-xs px-2 py-1 rounded">
-    {course.level || "Beginner"}
-  </span>
-</div> */}
-
-{/* Video Embed */}
-<div className="relative">
-  {course.youtubeVideoId ? (
-    <iframe
-      className="w-full h-36 sm:h-44 object-cover"
-      src={`https://www.youtube.com/embed/${course.youtubeVideoId}`}
-      title={course.title}
-      frameBorder="0"
-      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-      allowFullScreen
-    ></iframe>
-  ) : (
-    <img
-      src={course.image || cardImage}
-      alt={course.title}
-      className="w-full h-36 sm:h-44 object-cover"
-    />
-  )}
-
-  <span className="absolute top-2 left-2 bg-yellow-400 text-xs px-2 py-1 rounded">
-    {activeTab === "recorded" ? "Self-Paced" : "Live Course"}
-  </span>
-  <span className="absolute top-2 right-2 bg-black text-white text-xs px-2 py-1 rounded">
-    {course.level || "Beginner"}
-  </span>
-</div>
-
-
+            </div>
 
             {/* Content */}
             <div className="flex-1 flex flex-col justify-between">
               <div>
                 <div className="mt-3 px-3">
-                  <h3 className="text-lg  text-gray-900 leading-tight">
-                    {course.title}
-                  </h3>
+                  <h3 className="text-lg text-gray-900 leading-tight">{course.title}</h3>
                   <p className="text-sm text-gray-600">by {course.instructor || "Unknown"}</p>
                 </div>
                 <p className="text-gray-700 text-sm mt-2 px-3 leading-snug line-clamp-2">

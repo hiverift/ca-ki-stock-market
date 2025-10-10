@@ -16,6 +16,15 @@ const AdminAppointment = () => {
     "16:00",
   ];
 
+
+  // Function to convert to 12-hour format with AM/PM
+const formatTime12Hour = (time) => {
+  let [hour, minute] = time.split(":").map(Number);
+  const ampm = hour >= 12 ? "PM" : "AM";
+  hour = hour % 12 || 12;
+  return `${hour}:${minute.toString().padStart(2, "0")} ${ampm}`;
+};
+
   const [fromDate, setFromDate] = useState(null);
   const [toDate, setToDate] = useState(null);
   const [selectedTimes, setSelectedTimes] = useState([]);
@@ -156,21 +165,26 @@ const AdminAppointment = () => {
           <h3 className="text-xl font-semibold text-gray-700 mb-6 border-b pb-3">
             Select Available Times
           </h3>
+
+          
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {defaultTimes.map((time) => (
-              <button
-                key={time}
-                onClick={() => toggleTime(time)}
-                className={`px-4 py-2 rounded-xl border text-sm font-medium transition ${
-                  selectedTimes.includes(time)
-                    ? "bg-yellow-500 text-white border-yellow-500 shadow"
-                    : "bg-gray-50 text-gray-700 border-gray-300 hover:bg-yellow-50"
-                }`}
-              >
-                {time}
-              </button>
-            ))}
+        {defaultTimes.map((time) => (
+  <button
+    key={time}
+    onClick={() => toggleTime(time)}
+    className={`px-4 py-2 rounded-xl border text-sm font-medium transition ${
+      selectedTimes.includes(time)
+        ? "bg-yellow-500 text-white border-yellow-500 shadow"
+        : "bg-gray-50 text-gray-700 border-gray-300 hover:bg-yellow-50"
+    }`}
+  >
+    {formatTime12Hour(time)}
+  </button>
+))}
+
           </div>
+
+
         </div>
 
         {/* Save Button */}

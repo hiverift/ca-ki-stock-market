@@ -4,7 +4,6 @@ import config from "../pages/config";
 
 const BASE_URL = config.BASE_URL;
 
-
 const AdminCourseTable = () => {
   const [courses, setCourses] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -14,10 +13,9 @@ const AdminCourseTable = () => {
   const [showForm, setShowForm] = useState(false);
   const [editCourseId, setEditCourseId] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [showDetail, setShowDetail] = useState(null);
 
   const coursesPerPage = 5;
-
+  
   const [formData, setFormData] = useState({
     title: "",
     instructor: "",
@@ -31,6 +29,7 @@ const AdminCourseTable = () => {
     studentsCount: 0,
     categoryId: "",
     description: "",
+    youtubeVideoId: "",
   });
 
   // Fetch courses
@@ -38,7 +37,11 @@ const AdminCourseTable = () => {
     const fetchCourses = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${BASE_URL}/courses/getAllCourses`);
+        const accessToken = localStorage.getItem("accessToken");
+        const res = await fetch(`${BASE_URL}courses/getAllCourses`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const data = await res.json();
         setCourses(Array.isArray(data.result) ? data.result : []);
       } catch (err) {
@@ -55,46 +58,50 @@ const AdminCourseTable = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await fetch(`${BASE_URL}/categories`);
+        const accessToken = localStorage.getItem("accessToken");
+        const res = await fetch(`${BASE_URL}categories/getAllSubcategory`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const data = await res.json();
         setCategories(Array.isArray(data.result) ? data.result : []);
       } catch (err) {
         console.error("Error fetching categories:", err);
+        setCategories([]);
       }
     };
     fetchCategories();
   }, []);
 
-  // Fetch subcategories based on selected category
+  // Fetch subcategories
   useEffect(() => {
     if (!formData.categoryId) return;
     const fetchSubCategories = async () => {
       try {
-        const res = await fetch(`${BASE_URL}/categories/${formData.categoryId}/subcategories`);
+        const accessToken = localStorage.getItem("accessToken");
+        const res = await fetch(`${BASE_URL}categories/getAllSubcategory`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (!res.ok) throw new Error(`Failed to fetch subcategories: ${res.status}`);
         const data = await res.json();
         setSubCategories(Array.isArray(data.result) ? data.result : []);
       } catch (err) {
         console.error("Error fetching subcategories:", err);
+        setSubCategories([]);
       }
     };
     fetchSubCategories();
   }, [formData.categoryId]);
 
-  
-const filteredCourses = useMemo(() => {
-  const normalize = (str) =>
-    str?.toLowerCase().replace(/\s+/g, " ").trim() || "";
-
-  const query = normalize(searchQuery);
-
-  return courses.filter(
-    (c) =>
-      normalize(c.title).includes(query) ||
-      normalize(c.instructor).includes(query)
-  );
-}, [courses, searchQuery]);
-
-
+  const filteredCourses = useMemo(() => {
+    const normalize = (str) => str?.toLowerCase().replace(/\s+/g, " ").trim() || "";
+    const query = normalize(searchQuery);
+    return courses.filter(
+      (c) =>
+        normalize(c.title).includes(query) ||
+        normalize(c.instructor).includes(query)
+    );
+  }, [courses, searchQuery]);
 
   const totalPages = Math.ceil(filteredCourses.length / coursesPerPage);
   const indexOfLast = currentPage * coursesPerPage;
@@ -105,7 +112,10 @@ const filteredCourses = useMemo(() => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === "syllabus" ? value.split(",").map((item) => item.trim()).filter(Boolean) : value,
+      [name]:
+        name === "syllabus"
+          ? value.split(",").map((item) => item.trim()).filter(Boolean)
+          : value,
     }));
   };
 const handleSubmit = async (e) => {
@@ -113,25 +123,46 @@ const handleSubmit = async (e) => {
   setLoading(true);
 
   try {
+    // ✅ Required fields check
+    const requiredFields = ["title", "instructor", "price", "duration","youtubeVideoId"];
+    for (let field of requiredFields) {
+      if (!formData[field]) {
+        console.error(`${field} is required`);
+        setLoading(false);
+        return;
+      }
+    }
+
+    // ✅ Correct endpoint spelling
     const url = editCourseId
-      ? `${BASE_URL}/courses/${editCourseId}`
-      : `${BASE_URL}/courses/createCrouses`;
+      ? `${BASE_URL}courses/${editCourseId}`
+      : `${BASE_URL}courses/createCrouses`; // spelling fix
+      console.log("POST URL:", url);
+
+
     const method = editCourseId ? "PUT" : "POST";
 
     const form = new FormData();
+    form.append('itemType', 'course');
     for (let key in formData) {
-      if (key === "syllabus") {
-        form.append(key, JSON.stringify(formData[key])); // Convert array to string
-      } else if (key === "image" && formData[key]) {
-        form.append(key, formData[key]); // File
+       
+      if (key === "syllabus" && Array.isArray(formData[key])) {
+        form.append(key, JSON.stringify(formData[key])); // syllabus as JSON string
+  
       } else {
         form.append(key, formData[key]);
       }
     }
 
+    const accessToken = localStorage.getItem("accessToken");
+
     const res = await fetch(url, {
       method,
-      body: form, // DO NOT SET headers here for FormData
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        // No Content-Type here — browser handles for FormData
+      },
+      body: form,
     });
 
     const data = await res.json();
@@ -139,7 +170,7 @@ const handleSubmit = async (e) => {
     if (res.ok) {
       if (editCourseId) {
         setCourses((prev) =>
-          prev.map((c) => (c.id === editCourseId || c._id === editCourseId ? { ...c, ...data.result } : c))
+          prev.map((c) => (c._id === editCourseId ? data.result : c))
         );
       } else {
         setCourses((prev) => [...prev, data.result]);
@@ -165,10 +196,8 @@ const handleSubmit = async (e) => {
       level: course.level || "Beginner",
       mode: course.mode || "Live",
       syllabus: Array.isArray(course.syllabus) ? course.syllabus : [],
-      subCategoryId: course.subCategoryId || "",
       rating: course.rating || 0,
       studentsCount: course.studentsCount || 0,
-      categoryId: course.categoryId || "",
       description: course.description || "",
     });
     setEditCourseId(course.id || course._id);
@@ -179,7 +208,9 @@ const handleSubmit = async (e) => {
     if (!window.confirm("Are you sure you want to delete this course?")) return;
     setLoading(true);
     try {
-      const res = await fetch(`${BASE_URL}courses/${courseId}`, { method: "DELETE" });
+      const res = await fetch(`${BASE_URL}courses/${courseId}`, {
+        method: "DELETE",
+      });
       if (res.ok) {
         setCourses((prev) => prev.filter((c) => c.id !== courseId && c._id !== courseId));
       } else {
@@ -201,10 +232,8 @@ const handleSubmit = async (e) => {
       level: "Beginner",
       mode: "Live",
       syllabus: [],
-      subCategoryId: "",
       rating: 0,
       studentsCount: 0,
-      categoryId: "",
       description: "",
     });
     setEditCourseId(null);
@@ -213,7 +242,7 @@ const handleSubmit = async (e) => {
 
   const handleOverlayClick = (e) => {
     if (e.target === e.currentTarget) {
-      setShowDetail(null);
+      setShowForm(false);
       resetForm();
     }
   };
@@ -407,7 +436,7 @@ const handleSubmit = async (e) => {
   </div>
 
   {/* Category & SubCategory */}
-  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+  {/* <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
     <div>
       <label className="font-semibold text-gray-700">Category *</label>
       <select
@@ -442,9 +471,10 @@ const handleSubmit = async (e) => {
         ))}
       </select>
     </div>
-  </div>
+  </div> */}
 
   {/* Rating & Students Count */}
+  
   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
     <div>
       <label className="font-semibold text-gray-700">Rating</label>
@@ -454,6 +484,22 @@ const handleSubmit = async (e) => {
         min="0"
         max="5"
         value={formData.rating}
+        onChange={handleInputChange}
+        className="w-full border px-3 py-2 rounded-xl"
+      />
+    </div>
+
+  </div>
+
+
+  {/* youtube Id & Students Count  */}
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div>
+      <label className="font-semibold text-gray-700">youtube Id</label>
+      <input
+        type="string"
+        name="youtubeVideoId"
+        value={formData.youtubeVideoId}
         onChange={handleInputChange}
         className="w-full border px-3 py-2 rounded-xl"
       />
@@ -469,6 +515,8 @@ const handleSubmit = async (e) => {
       />
     </div>
   </div>
+
+
 
   {/* Syllabus */}
 <div>
@@ -493,7 +541,7 @@ const handleSubmit = async (e) => {
 
 
   {/* Image */}
-  <div>
+  {/* <div>
     <label className="font-semibold text-gray-700">Image</label>
     <input
       type="file"
@@ -507,7 +555,7 @@ const handleSubmit = async (e) => {
       }
       className="w-full border px-3 py-2 rounded-xl"
     />
-  </div>
+  </div> */}
 
   {/* Description */}
   <div>

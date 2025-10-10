@@ -5,6 +5,7 @@ import { Menu, X } from "lucide-react";
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false); // ✅ admin flag
   const navigate = useNavigate();
 
   const toggleMenu = () => setIsOpen(!isOpen);
@@ -16,21 +17,30 @@ function Navbar() {
     { name: "About Us", path: "/about" },
     { name: "FAQ", path: "/faq" },
     { name: "Contact", path: "/contact" },
-    { name: "Appointment ", path: "/Appointment" },
+    { name: "Appointment", path: "/appointment" },
   ];
 
-  // ✅ check login status
+  // ✅ check login status and admin status
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
-    setIsLoggedIn(!!token);
+    const adminToken = localStorage.getItem("admin"); // admin case
+
+    setIsLoggedIn(!!token); // only true for normal user login
+    setIsAdmin(!!adminToken); // true only for admin login
   }, []);
 
-  // ✅ handle logout
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("user");
+    localStorage.removeItem("userId");
+
+    localStorage.removeItem("admin");
+    localStorage.removeItem("admin");
+    localStorage.removeItem("adminId");
+
     setIsLoggedIn(false);
+    setIsAdmin(false);
     navigate("/login");
   };
 
@@ -74,7 +84,8 @@ function Navbar() {
 
             {/* Desktop Buttons */}
             <div className="hidden md:flex items-center space-x-3">
-              {isLoggedIn ? (
+              {/* Only show logout for normal users, not admins */}
+              {isLoggedIn && !isAdmin ? (
                 <button
                   onClick={handleLogout}
                   className="text-red-500 hover:underline"
@@ -126,7 +137,7 @@ function Navbar() {
               ))}
 
               <div className="flex flex-col space-y-2 mt-2">
-                {isLoggedIn ? (
+                {isLoggedIn && !isAdmin ? (
                   <button
                     onClick={() => {
                       handleLogout();

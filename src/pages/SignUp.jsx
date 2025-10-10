@@ -1,5 +1,7 @@
 import React, { useState } from "react";
-import { FaUser, FaEnvelope, FaPhoneAlt, FaLock } from "react-icons/fa";
+import { FaUser, FaEnvelope, FaPhoneAlt, FaLock,FaEye, FaEyeSlash } from "react-icons/fa";
+
+
 import Swal from "sweetalert2";
 import axios from "axios";
 import { useNavigate } from "react-router-dom"; // Import useNavigate
@@ -17,6 +19,9 @@ const SignUp = () => {
 
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -80,8 +85,10 @@ const SignUp = () => {
     { label: "Full Name", icon: <FaUser />, type: "text", name: "name", placeholder: "Enter your full name" },
     { label: "Email Address", icon: <FaEnvelope />, type: "email", name: "email", placeholder: "Enter your email address" },
     { label: "Mobile Number", icon: <FaPhoneAlt />, type: "tel", name: "mobile", placeholder: "Enter your mobile number" },
-    { label: "Password", icon: <FaLock />, type: "password", name: "password", placeholder: "Create a strong password" },
-    { label: "Confirm Password", icon: <FaLock />, type: "password", name: "confirmPassword", placeholder: "Confirm your password" },
+    // { label: "Password", icon: <FaLock />, type: "password", name: "password", placeholder: "Create a strong password" },
+    // { label: "Confirm Password", icon: <FaLock />, type: "password", name: "confirmPassword", placeholder: "Confirm your password" },
+     { label: "Password", icon: <FaLock />, type: showPassword ? "text" : "password", name: "password", placeholder: "Create a strong password", toggleShow: () => setShowPassword(!showPassword), showState: showPassword },
+  { label: "Confirm Password", icon: <FaLock />, type: showConfirmPassword ? "text" : "password", name: "confirmPassword", placeholder: "Confirm your password", toggleShow: () => setShowConfirmPassword(!showConfirmPassword), showState: showConfirmPassword },
   ];
 
   return (
@@ -97,14 +104,25 @@ const SignUp = () => {
             <label className="block text-sm font-semibold text-gray-800 mb-1">{field.label}</label>
             <div className="flex items-center border border-gray-300 rounded-md px-3 py-2 bg-white focus-within:ring-2 focus-within:ring-blue-500">
               <span className="text-gray-500 mr-2">{field.icon}</span>
-              <input
-                type={field.type}
-                name={field.name}
-                placeholder={field.placeholder}
-                value={formData[field.name]}
-                onChange={handleChange}
-                className="w-full bg-transparent outline-none text-sm text-gray-700"
-              />
+    <div className="relative w-full">
+  <input
+    type={field.type}
+    name={field.name}
+    placeholder={field.placeholder}
+    value={formData[field.name]}
+    onChange={handleChange}
+    className="w-full bg-transparent outline-none text-sm text-gray-700 pr-8"
+  />
+  {field.name === "password" || field.name === "confirmPassword" ? (
+    <span
+      onClick={field.toggleShow}
+      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer"
+    >
+      {field.showState ? <FaEyeSlash /> : <FaEye />}
+    </span>
+  ) : null}
+</div>
+
             </div>
           </div>
         ))}

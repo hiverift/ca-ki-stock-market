@@ -1,51 +1,57 @@
 import React, { useState, useEffect } from "react";
-import {
-  FaLock,
-  FaPause,
-  FaChartLine,
-  FaCogs,
-  FaWallet,
-  FaShieldAlt,
-  FaFileInvoiceDollar,
-  FaLightbulb,
-  FaSearch,
-  FaBalanceScale,
-} from "react-icons/fa";
-import {
-  Calendar,
-  Clock,
-  Users,
-  Video,
-  ChevronDown,
-  Play,
-  Eye,
-  Star,
-} from "lucide-react";
-import config from "../pages/config";
+import { Calendar, Clock, Users, Video } from "lucide-react";
+import config from "../pages/config"; // Verify path
+import cardImage from "../assets/image/card.jpg";
 
 const MyWebinars = () => {
   const [webinars, setWebinars] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchWebinars = async () => {
       try {
-        const token = localStorage.getItem("token");
-        const res = await fetch(`${config.BASE_URL}webinars`, {
+        const token = localStorage.getItem("accessToken");
+        const userId = localStorage.getItem("userId") || "";
+
+        if (!token || !userId) {
+          setError("Please log in to view your webinars.");
+          setWebinars([]);
+          setLoading(false);
+          return;
+        }
+
+        const res = await fetch(`${config.BASE_URL}users/${userId}/assets`, {
           headers: {
             Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
         });
+
+        if (!res.ok) throw new Error("Failed to fetch webinars");
+
         const data = await res.json();
-        console.log("All Webinars:", data.result || []);
-        setWebinars(data.result || []);
+
+        const webinarsData = (data.result?.webinars || [])
+          .filter((webinar) => webinar.paid === true)
+          .map((webinar) => ({
+            ...webinar.details,
+            paid: webinar.paid,
+            latestOrder: webinar.orders?.[webinar.orders.length - 1] || null,
+            itemType: webinar.itemType,
+            itemId: webinar.itemId,
+          }));
+
+        setWebinars(webinarsData);
       } catch (err) {
         console.error("Error fetching webinars:", err);
+        setError("Failed to fetch webinars. Please try again later.");
         setWebinars([]);
       } finally {
         setLoading(false);
       }
     };
+
     fetchWebinars();
   }, []);
 
@@ -57,87 +63,92 @@ const MyWebinars = () => {
     );
   }
 
-  // Paid webinars filter
-  const paidWebinars = webinars.filter(
-    (webinar) => webinar.price && Number(webinar.price) > 0
-  );
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <p className="text-red-500 text-xl">{error}</p>
+      </div>
+    );
+  }
 
-  console.log("Paid Webinars:", paidWebinars);
+  if (webinars.length === 0) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <p className="text-gray-600 text-xl">No paid webinars available.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="md:ml-64">
-      <div className="text-white text-center text-lg font-semibold mx-auto px-4 sm:px-6 lg:px-8 space-y-4 w-full">
-        {/* Webinars */}
-        <div className="mt-6">
-          {paidWebinars.length === 0 ? (
-            <p className="text-gray-600 text-center">No paid webinars available.</p>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {paidWebinars.map((webinar, index) => (
-                <div
-                  key={webinar._id || index}
-                  className="bg-white rounded-lg shadow-md border border-gray-200 flex flex-col justify-between transition-transform hover:shadow-lg hover:-translate-y-1 duration-200 h-full"
-                >
-                  <div className="p-4 flex flex-col flex-1">
-                    <div className="flex items-center justify-start mb-5 space-x-2">
-                      <span className="bg-green-100 text-green-800 text-[10px] font-medium px-2 py-0.5 rounded-full">
-                        {webinar.type}
-                      </span>
-                      <span className="bg-gray-100 text-gray-700 text-[10px] font-medium px-2 py-0.5 rounded-full">
-                        {webinar.level}
-                      </span>
-                    </div>
-                    <h3 className="text-md font-semibold text-gray-600 mb-1 text-left">
-                      {webinar.title}
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-2 text-left">
-                      {webinar.presenter || webinar.instructor}
-                    </p>
-                    <p className="text-xs text-gray-700 leading-relaxed mb-3 line-clamp-2 text-left">
-                      {webinar.description}
-                    </p>
-                    <div className="flex flex-col space-y-1 mb-3 text-[11px] text-gray-600">
-                      <div className="flex justify-between">
-                        <div className="flex items-center space-x-1">
-                          <Calendar className="w-3 h-3" />
-                          <span>{webinar.startDate}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Clock className="w-3 h-3" />
-                          <span>{webinar.durationMinutes} mins</span>
-                        </div>
-                      </div>
-                      <div className="flex justify-between">
-                        <div className="flex items-center space-x-1">
-                          <Users className="w-3 h-3" />
-                          <span>{webinar.attendeesCount}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Video className="w-3 h-3" />
-                          <span>{webinar.duration}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 space-y-6">
+      <h1 className="text-2xl font-bold mb-6">My Webinars</h1>
 
-                  <hr className="border" />
-                  <div className="bg-gray-50 px-4 py-4 flex items-center justify-between mt-auto border-t">
-                    <div className="text-xl text-gray-600">
-                      ₹{webinar.price || "Free"}
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <button className="px-4 py-2 rounded-md text-xs font-medium flex items-center space-x-1 bg-yellow-400 hover:bg-yellow-500 text-gray-900 transition-colors">
-                        Read More
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {webinars.map((webinar) => (
+          <div
+            key={webinar.itemId}
+            className="bg-white p-4 rounded-xl shadow-md border border-gray-200 flex flex-col cursor-pointer hover:shadow-lg transition"
+          >
+            {/* Thumbnail */}
+            <div className="relative mb-4">
+              {webinar.youtubeVideoId ? (
+                <img
+                  src={`https://img.youtube.com/vi/${webinar.youtubeVideoId}/hqdefault.jpg`}
+                  alt={webinar.title}
+                  onError={(e) => (e.target.src = cardImage)}
+                  className="w-full h-36 sm:h-44 object-cover rounded"
+                />
+              ) : (
+                <img
+                  src={cardImage}
+                  alt="Webinar"
+                  className="w-full h-36 sm:h-44 object-cover rounded"
+                />
+              )}
             </div>
-          )}
-        </div>
 
+            {/* Webinar Info */}
+            <h2 className="font-semibold text-lg">{webinar.title}</h2>
+            <p className="text-gray-600 mt-1">{webinar.presenter || "N/A"}</p>
+            <p className="text-gray-700 text-sm mt-1 line-clamp-2">
+              {webinar.description}
+            </p>
 
+            <div className="flex flex-col space-y-1 mt-3 text-[12px] text-gray-600">
+              <div className="flex justify-between">
+                <div className="flex items-center space-x-1">
+                  <Calendar className="w-3 h-3" />
+                  <span>{new Date(webinar.startDate).toLocaleDateString()}</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <Clock className="w-3 h-3" />
+                  <span>{webinar.durationMinutes || "N/A"} mins</span>
+                </div>
+              </div>
+              <div className="flex justify-between">
+                <div className="flex items-center space-x-1">
+                  <Users className="w-3 h-3" />
+                  <span>{webinar.attendeesCount || 0}</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <Video className="w-3 h-3" />
+                  <span>{webinar.duration || "N/A"}</span>
+                </div>
+              </div>
+            </div>
+
+            <hr className="border my-3" />
+
+            <div className="flex items-center justify-between mt-auto">
+              <span className="text-xl text-gray-600">
+                ₹{webinar.price || "Free"}
+              </span>
+              <button className="px-4 py-2 rounded-md text-xs font-medium bg-yellow-400 hover:bg-yellow-500 text-gray-900 transition-colors">
+                Read More
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

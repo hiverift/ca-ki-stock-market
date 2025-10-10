@@ -26,7 +26,7 @@ const AdminSideBar = () => {
     { name: "Webinars", icon: <PresentationChartLineIcon className="h-5 w-5" />, path: "/admin-dashboard/webinars" },
     { name: "Appointments", icon: <CalendarDaysIcon className="h-5 w-5" />, path: "/admin-dashboard/appointments" },
      { name: "Services", icon: <CreditCardIcon className="h-5 w-5" />, path: "/admin-dashboard/services" },
-    { name: "Payments", icon: <CreditCardIcon className="h-5 w-5" />, path: "/admin-dashboard/payments" },
+    // { name: "Payments", icon: <CreditCardIcon className="h-5 w-5" />, path: "/admin-dashboard/payments" },
     { name: "order", icon: <UsersIcon className="h-5 w-5" />, path: "/admin-dashboard/Adminorder" },
     { name: "User Management", icon: <UsersIcon className="h-5 w-5" />, path: "/admin-dashboard/user-management" },
     { name: "KYC", icon: <UsersIcon className="h-5 w-5" />, path: "/admin-dashboard/kyc-verification" }, 

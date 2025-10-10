@@ -18,6 +18,7 @@ import Contact from "./pages/Contact";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 import NotFount from "../src/NotFound";
+import { SessionContext } from "./context/SessionContext";
 
 // User Dashboard pages
 import UserDashboard from "./userdashboard/UserDashboard";

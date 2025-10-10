@@ -10,25 +10,15 @@ import {
   FaSearch,
   FaBalanceScale,
 } from "react-icons/fa";
-import {
-  Calendar,
-  Clock,
-  Users,
-  Video,
-  ChevronDown,
-} from "lucide-react";
+import { Calendar, Clock, Users, Video } from "lucide-react";
 import Footer from "./Footer";
 
-const API_BASE = "https://www.cakistockmarket.com/api/v1/";
+const API_BASE = "https://www.cakistockmarket.com/api/v1";
 
 const Webinars = () => {
-  const [activeTab, setActiveTab] = useState("upcoming");
   const [webinars, setWebinars] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showAll, setShowAll] = useState(false); // new state
   const navigate = useNavigate();
-
-  const VISIBLE_LIMIT = 3; // kitne webinars initially show honge
 
   const specializations = [
     { name: "Market Analysis", icon: <FaChartLine />, active: true },
@@ -46,7 +36,7 @@ const Webinars = () => {
       try {
         const res = await fetch(`${API_BASE}/webinars`);
         const data = await res.json();
-        if (data.statusCode === 200) {
+        if (data?.statusCode === 200 && Array.isArray(data.result)) {
           setWebinars(data.result);
         }
       } catch (err) {
@@ -58,14 +48,6 @@ const Webinars = () => {
     fetchWebinars();
   }, []);
 
-  const filteredWebinars = webinars.filter(
-    (webinar) => webinar.status?.toLowerCase() === activeTab
-  );
-
-  const visibleWebinars = showAll
-    ? filteredWebinars
-    : filteredWebinars.slice(0, VISIBLE_LIMIT);
-
   const handleRegister = (webinar) => {
     navigate("/checkout", { state: { webinar, webinartype: "webinar" } });
   };
@@ -73,51 +55,16 @@ const Webinars = () => {
   return (
     <div className="pt-24">
       <div className="text-white text-center text-lg mx-auto px-4 sm:px-6 lg:px-8 space-y-4 max-w-7xl">
-        {/* Tabs */}
-        <div className="rounded-xl p-6">
-          <div className="flex justify-around gap-2 bg-gray-200 py-2 px-2 rounded-full w-full mx-auto">
-            <button
-              onClick={() => setActiveTab("upcoming")}
-              className={`rounded-full text-sm font-medium transition w-[33%] ${
-                activeTab === "upcoming"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "bg-transparent text-gray-600 hover:text-gray-800"
-              }`}
-            >
-              Upcoming
-            </button>
-            <button
-              onClick={() => setActiveTab("live")}
-              className={`rounded-full text-sm font-medium transition w-[33%] ${
-                activeTab === "live"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "bg-transparent text-gray-600 hover:text-gray-800"
-              }`}
-            >
-              Live
-            </button>
-            <button
-              onClick={() => setActiveTab("recorded")}
-              className={`rounded-full text-sm font-medium transition w-[33%] ${
-                activeTab === "recorded"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "bg-transparent text-gray-600 hover:text-gray-800"
-              }`}
-            >
-              Recorded
-            </button>
-          </div>
-        </div>
 
         {/* Loading State */}
         {loading && <p className="text-gray-600">Loading webinars...</p>}
-        {!loading && filteredWebinars.length === 0 && (
-          <p className="text-gray-600">No webinars found for this category.</p>
+        {!loading && webinars.length === 0 && (
+          <p className="text-gray-600">No webinars found.</p>
         )}
 
         {/* Webinars List */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {visibleWebinars.map((webinar) => (
+          {webinars.map((webinar) => (
             <div
               key={webinar._id}
               className="bg-white rounded-lg shadow-md border border-gray-200 flex flex-col justify-between transition-transform hover:shadow-lg hover:-translate-y-1 duration-200 h-full"
@@ -140,12 +87,15 @@ const Webinars = () => {
                 <p className="text-xs text-gray-700 leading-relaxed mb-3 line-clamp-2 text-left">
                   {webinar.description}
                 </p>
+
                 <div className="flex flex-col space-y-1 mb-3 text-[11px] text-gray-600">
                   <div className="flex justify-between">
                     <div className="flex items-center space-x-1">
                       <Calendar className="w-3 h-3" />
                       <span>
-                        {new Date(webinar.startDate).toLocaleDateString()}
+                        {webinar.startDate
+                          ? new Date(webinar.startDate).toLocaleDateString()
+                          : "TBD"}
                       </span>
                     </div>
                     <div className="flex items-center space-x-1">
@@ -202,19 +152,6 @@ const Webinars = () => {
             </div>
           ))}
         </div>
-
-        {/* Show More Button */}
-        {filteredWebinars.length > VISIBLE_LIMIT && (
-          <div className="flex justify-center mt-6">
-            <button
-              onClick={() => setShowAll(!showAll)}
-              className="flex items-center space-x-1 text-blue-600 hover:text-blue-800 font-medium text-sm transition-colors"
-            >
-              <span>{showAll ? "Show Less Webinars" : "Show More Webinars"}</span>
-              <ChevronDown className="w-4 h-4" />
-            </button>
-          </div>
-        )}
 
         {/* Browse by specialization */}
         <section className="w-full px-4 sm:px-6 lg:px-8 mt-10 mb-16">

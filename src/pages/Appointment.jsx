@@ -215,7 +215,7 @@ export default function AppointmentPage() {
             appointmentId: bookingResult.bookingId,
             title: selectedService?.name,
             description: `Appointment on ${moment(selectedDate).format("DD MMM YYYY")} at ${selectedSlot?.label}`,
-            price: selectedService?.price || 0,
+    price: Number(selectedService?.price) || 0,
             slot: selectedSlot,
             date: selectedDate,
             serviceId: selectedService?._id ?? selectedService?.id,

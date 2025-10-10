@@ -8,17 +8,16 @@ import cardImage from "../assets/image/card.jpg";
 import config from "../pages/config";
 
 const MyCourses = () => {
-  const [enrolledItems, setEnrolledItems] = useState([]);
+  const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchEnrolledItems = async () => {
+    const fetchEnrolledCourses = async () => {
       try {
         setLoading(true);
         const token = localStorage.getItem("accessToken");
-        console.log("token after login", token);
-        const userId = "68b1a01074ad0c19f272b438"; // FIXED ID
+        const userId = localStorage.getItem("userId") || "";
 
         const res = await fetch(`${config.BASE_URL}users/${userId}/assets`, {
           headers: {
@@ -26,40 +25,41 @@ const MyCourses = () => {
             "Content-Type": "application/json",
           },
         });
+
         const data = await res.json();
 
         if (data.statusCode === 200 && data.result) {
-          const allItems = [
-            ...data.result.courses.map((c) => ({
+          // 🔹 Show only courses
+          const courses = data.result.courses.flatMap((c) =>
+            c.orders.map((order) => ({
               ...c.details,
-              paid: c.paid,
-              latestOrder: c.latestOrder,
               itemType: "course",
-            })),
-          
-          ];
-          setEnrolledItems(allItems);
+              paid: c.paid,
+              order, // attach order info
+            }))
+          );
+          setEnrolledCourses(courses);
         } else {
-          setEnrolledItems([]);
+          setEnrolledCourses([]);
         }
       } catch (error) {
-        console.error("Error fetching enrolled items:", error);
+        console.error("Error fetching enrolled courses:", error);
         Swal.fire({
           icon: "error",
           title: "Oops...",
-          text: "Failed to load your enrolled items!",
+          text: "Failed to load your enrolled courses!",
         });
-        setEnrolledItems([]);
+        setEnrolledCourses([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchEnrolledItems();
+    fetchEnrolledCourses();
   }, []);
 
-  const handleItemClick = (item) => {
-    navigate("/course-details", { state: { item } });
+  const handleCourseClick = (course) => {
+    navigate("/course-details", { state: { item: course } });
   };
 
   if (loading) {
@@ -70,7 +70,7 @@ const MyCourses = () => {
     );
   }
 
-  if (enrolledItems.length === 0) {
+  if (enrolledCourses.length === 0) {
     return (
       <div className="flex items-center justify-center h-screen px-4">
         <p className="text-gray-700 text-lg bg-yellow-100 font-sans px-6 py-4 flex justify-center items-center rounded shadow-md">
@@ -83,22 +83,22 @@ const MyCourses = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 space-y-6">
       <h1 className="text-2xl md:text-3xl font-semibold text-gray-900 mb-6">
-        My Enrolled Items
+        My Enrolled Courses
       </h1>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {enrolledItems.map((item) => (
+        {enrolledCourses.map((course, idx) => (
           <div
-            key={item._id}
+            key={course._id + idx}
             className="rounded-xl shadow-md hover:shadow-xl transition transform hover:-translate-y-1 overflow-hidden flex flex-col cursor-pointer"
           >
-            {/* Video replaces Image if available */}
+            {/* Thumbnail or YouTube video */}
             <div className="relative">
-              {item.youtubeVideoId ? (
+              {course.youtubeVideoId ? (
                 <iframe
                   width="100%"
                   height="200"
-                  src={`https://www.youtube.com/embed/${item.youtubeVideoId}`}
+                  src={`https://www.youtube.com/embed/${course.youtubeVideoId}`}
                   title="YouTube video player"
                   frameBorder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -107,81 +107,112 @@ const MyCourses = () => {
                 ></iframe>
               ) : (
                 <img
-                  src={item.image || cardImage}
-                  alt={item.title}
+                  src={course.image || cardImage}
+                  alt={course.title}
                   onError={(e) => (e.target.src = cardImage)}
                   className="w-full h-36 sm:h-44 object-cover"
                 />
               )}
 
               <span className="absolute top-2 left-2 bg-yellow-400 text-xs px-2 py-1 rounded font-medium">
-                {item.itemType === "course" || item.itemType === "webinar"
-                  ? item.mode === "Recorded"
-                    ? "Self-Paced"
-                    : "Live"
-                  : "Appointment"}
+                {course.mode === "Recorded" ? "Self-Paced" : "Live"}
               </span>
-              <span className="absolute top-2 right-2 bg-black text-white text-xs px-2 py-1 rounded font-medium">
-                {item.level || ""}
-              </span>
+
+              {course.level && (
+                <span className="absolute top-2 right-2 bg-black text-white text-xs px-2 py-1 rounded font-medium">
+                  {course.level}
+                </span>
+              )}
             </div>
 
             {/* Content */}
             <div className="flex-1 flex flex-col justify-between p-3">
               <div>
                 <h3 className="text-lg text-gray-900 font-semibold leading-tight">
-                  {item.title || item.serviceId || "No Title"}
+                  {course.title || "No Title"}
                 </h3>
                 <p className="text-sm text-gray-600 mb-2">
-                  {item.instructor || item.presenter || "Unknown"}
+                  {course.instructor || "Unknown"}
                 </p>
+
                 <p className="text-gray-700 text-sm leading-snug line-clamp-2 mb-3">
-                  {item.description || "No description available."}
+                  {course.description || "No description available."}
                 </p>
 
                 <div className="flex gap-4 flex-wrap items-center text-xs text-gray-500 mb-3">
-                  {item.duration && (
+                  {course.duration && (
                     <span className="flex items-center gap-1">
-                      <FaRegClock size={12} /> {item.duration}
+                      <FaRegClock size={12} /> {course.duration}
                     </span>
                   )}
-                  {item.studentsCount && (
+                  {course.studentsCount && (
                     <span className="flex items-center gap-1">
-                      <MdGroup size={12} /> {item.studentsCount}
+                      <MdGroup size={12} /> {course.studentsCount}
                     </span>
                   )}
-                  {item.rating && (
+                  {course.rating && (
                     <span className="flex items-center gap-1">
                       {Array.from({ length: 5 }).map((_, idx) => (
                         <FaStar
                           key={idx}
                           size={12}
                           className={`text-xs ${
-                            idx < Math.round(item.rating || 0)
+                            idx < Math.round(course.rating || 0)
                               ? "text-yellow-400"
                               : "text-gray-300"
                           }`}
                         />
                       ))}
                       <span className="ml-1 text-gray-500">
-                        {item.rating || 0}
+                        {course.rating || 0}
                       </span>
                     </span>
                   )}
                 </div>
+
+                {/* 🔹 Order Info */}
+                {course.order && (
+                  <div className="bg-gray-50 border rounded p-2 text-xs text-gray-600 mb-2">
+                    <p>
+                      <strong>Order ID:</strong> {course.order.orderId}
+                    </p>
+                    <p>
+                      <strong>Amount:</strong> ₹
+                      {(course.order.amount / 100).toLocaleString("en-IN")}
+                    </p>
+                    <p>
+                      <strong>Status:</strong>{" "}
+                      <span
+                        className={`${
+                          course.order.status === "paid"
+                            ? "text-green-600"
+                            : "text-red-600"
+                        } font-medium`}
+                      >
+                        {course.order.status}
+                      </span>
+                    </p>
+                    <p>
+                      <strong>Date:</strong>{" "}
+                      {new Date(course.order.createdAt).toLocaleString("en-IN")}
+                    </p>
+                  </div>
+                )}
               </div>
 
-              {/* Price & Button */}
+              {/* Footer */}
               <div className="flex items-center justify-between mt-2">
-                {item.price && (
-                  <p className="text-gray-900 font-medium">₹{item.price}</p>
+                {course.price && (
+                  <p className="text-gray-900 font-medium">
+                    ₹{course.price.toLocaleString("en-IN")}
+                  </p>
                 )}
-                <button
-                  onClick={() => handleItemClick(item)}
+                {/* <button
+                  onClick={() => handleCourseClick(course)}
                   className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm font-medium transition"
                 >
                   View Details
-                </button>
+                </button> */}
               </div>
             </div>
           </div>
