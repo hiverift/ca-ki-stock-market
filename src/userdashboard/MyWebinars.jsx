@@ -41,15 +41,18 @@ const MyWebinars = () => {
         //     itemType: webinar.itemType,
         //     itemId: webinar.itemId,
         //   }));
-           const webinarsData = data.result.webinars.flatMap((c) =>
-            console.log("Webinar item:", c),
-            c.orders.map((order) => ({
-              ...c.details,
-              itemType: "webinar",
-              paid: c.paid,
-              order, // attach order info
-            }))
-          );
+     console.log("Fetched webinars data:", data);
+
+const webinarsData = data.result.webinars.flatMap((c) =>
+  c.orders.map((order) => ({
+    ...c.details,       // webinar details
+    itemType: "webinar",
+    paid: c.paid,
+    order,               // attach order info
+  }))
+);
+
+console.log("Processed webinars:", webinarsData);
 
         setWebinars(webinarsData);
       } catch (err) {
@@ -93,9 +96,9 @@ const MyWebinars = () => {
       <h1 className="text-2xl font-bold mb-6">My Webinars</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {webinars.map((webinar) => (
+        {webinars.map((webinar,index) => (
           <div
-            key={webinar.itemId}
+            key={index}
             className="bg-white p-4 rounded-xl shadow-md border border-gray-200 flex flex-col cursor-pointer hover:shadow-lg transition"
           >
             {/* Thumbnail */}
