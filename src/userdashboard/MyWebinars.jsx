@@ -32,15 +32,24 @@ const MyWebinars = () => {
 
         const data = await res.json();
 
-        const webinarsData = (data.result?.webinars || [])
-          .filter((webinar) => webinar.paid === true)
-          .map((webinar) => ({
-            ...webinar.details,
-            paid: webinar.paid,
-            latestOrder: webinar.orders?.[webinar.orders.length - 1] || null,
-            itemType: webinar.itemType,
-            itemId: webinar.itemId,
-          }));
+        // const webinarsData1 = (data.result?.webinars || [])
+        //   .filter((webinar) => webinar.paid === true)
+        //   .map((webinar) => ({
+        //     ...webinar.details,
+        //     paid: webinar.paid,
+        //     latestOrder: webinar.orders?.[webinar.orders.length - 1] || null,
+        //     itemType: webinar.itemType,
+        //     itemId: webinar.itemId,
+        //   }));
+           const webinarsData = data.result.webinars.flatMap((c) =>
+            console.log("Webinar item:", c),
+            c.orders.map((order) => ({
+              ...c.details,
+              itemType: "webinar",
+              paid: c.paid,
+              order, // attach order info
+            }))
+          );
 
         setWebinars(webinarsData);
       } catch (err) {
@@ -78,7 +87,7 @@ const MyWebinars = () => {
       </div>
     );
   }
-
+  console.log("Webinars:", webinars);
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 space-y-6">
       <h1 className="text-2xl font-bold mb-6">My Webinars</h1>

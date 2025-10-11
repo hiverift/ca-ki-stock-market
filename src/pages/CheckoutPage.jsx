@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
+import Swal from "sweetalert2";
 import { FaCheck } from "react-icons/fa";
 import config from "./config";
 
@@ -20,22 +21,10 @@ function SafeImg({ src, alt, className }) {
   return <img src={s} alt={alt} className={className} onError={() => setS(fallbackThumb)} />;
 }
 
-function useToasts() {
-  const [toasts, setToasts] = useState([]);
-  function push(message, type = "info", ttl = 3500) {
-    const id = Date.now() + Math.random();
-    setToasts((t) => [...t, { id, message, type }]);
-    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), ttl);
-  }
-  return { toasts, push, remove: (id) => setToasts((t) => t.filter((x) => x.id !== id)) };
-}
-
 export default function CheckoutPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const toast = useToasts();
 
-  // ✅ FIXED: Manage accessToken and userId with state and localStorage sync
   const [accessToken, setAccessToken] = useState(() => localStorage.getItem("accessToken") || "");
   const [userId, setUserId] = useState(() => localStorage.getItem("userId") || "");
 
@@ -56,17 +45,23 @@ export default function CheckoutPage() {
   const preparedItem = { ...item };
   if (location.state?.coursetype) preparedItem.courseId = item._id || item.id;
   else if (location.state?.webinartype) preparedItem.webinarId = item._id || item.id;
-  else if (location.state?.appointmenttype) preparedItem.appointmentId = location.state?.appointmentId || item.id;
+  else if (location.state?.appointmenttype)
+    preparedItem.appointmentId = location.state?.appointmentId || item.id;
   if (location.state?.price) preparedItem.price = location.state?.price || item.price;
 
   const [dark, setDark] = useState(false);
   const [step, setStep] = useState("details");
   const [isLoggedIn, setIsLoggedIn] = useState(!!accessToken);
   const [loginData, setLoginData] = useState({ email: "", password: "", role: "user" });
-  const [address, setAddress] = useState({ firstName: "", lastName: "", email: "", phone: "", fullAddress: "" });
+  const [address, setAddress] = useState({
+    name: "",
+    lastName: "",
+    email: "",
+    mobile: "",
+    fullAddress: "",
+  });
   const [coupon, setCoupon] = useState("");
   const [discount, setDiscount] = useState(0);
-  const [showConfirm, setShowConfirm] = useState(false);
   const [loadingPayment, setLoadingPayment] = useState(false);
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [errors, setErrors] = useState({});
@@ -93,7 +88,7 @@ export default function CheckoutPage() {
     s.onload = () => setScriptLoaded(true);
     s.onerror = () => {
       setScriptLoaded(false);
-      toast.push("Razorpay failed to load", "error");
+      Swal.fire("Error", "Razorpay failed to load", "error");
     };
     document.body.appendChild(s);
   }, []);
@@ -102,15 +97,17 @@ export default function CheckoutPage() {
     if (isLoggedIn && accessToken) {
       (async () => {
         try {
-          const res = await axios.get(`${config.BASE_URL}auth/profile`, {
+          const res = await axios.get(`${BASE_URL}/users/${userId}`, {
             headers: { Authorization: `Bearer ${accessToken}` },
           });
-          const user = res.data?.user || {};
+          console.log("User details fetch response:", res);
+          const user = res.result?.user || {};
+          console.log("Fetched user details:", user);
           setAddress({
-            firstName: user.firstName || "John",
+            name: user.name || "John",
             lastName: user.lastName || "Doe",
             email: user.email || "example@gmail.com",
-            phone: user.phone || "9999999999",
+            mobile: user.mobile || "9999999999",
             fullAddress: user.address || "Delhi, India",
           });
           if (user._id) {
@@ -119,10 +116,10 @@ export default function CheckoutPage() {
           }
         } catch {
           setAddress({
-            firstName: "John",
+            name: "John",
             lastName: "Doe",
             email: "example@gmail.com",
-            phone: "9999999999",
+            mobile: "9999999999",
             fullAddress: "Delhi, India",
           });
         }
@@ -143,9 +140,11 @@ export default function CheckoutPage() {
 
     try {
       const res = await axios.post(`${config.BASE_URL}auth/login`, loginData);
+       console.log("Login successful, user:", res.data?.result);
       const { accessToken, user } = res.data?.result || {};
-
-      if (accessToken && user) {
+       
+      if (accessToken) {
+     
         localStorage.setItem("accessToken", accessToken);
         localStorage.setItem("userId", user._id || "");
         localStorage.setItem("user", JSON.stringify(user));
@@ -153,37 +152,44 @@ export default function CheckoutPage() {
         setAccessToken(accessToken);
         setUserId(user._id || "");
         setIsLoggedIn(true);
-        toast.push("Login successful!", "success");
+
+        Swal.fire({
+          icon: "success",
+          title: "Login Successful!",
+          text: `Welcome back, ${user.firstName || "User"}!`,
+          timer: 2500,
+          showConfirmButton: false,
+        });
 
         setAddress({
-          firstName: user.firstName || "John",
+          name: user.name || "John",
           lastName: user.lastName || "Doe",
           email: user.email || loginData.email,
-          phone: user.phone || "9999999999",
+          mobile: user.mobile || "9999999999",
           fullAddress: user.address || "Delhi, India",
         });
       } else {
-        toast.push("Login failed: Invalid response", "error");
+        Swal.fire("Error", "Login failed: Invalid response", "error");
       }
     } catch (err) {
       console.error("Login error:", err?.response?.data || err.message);
-      toast.push("Login failed", "error");
+      Swal.fire("Error", "Login failed. Please check credentials.", "error");
     }
   };
-
   const validateAddress = () => {
     const e = {};
-    if (!address.firstName) e.firstName = "Required";
+    if (!address.name) e.name = "Required";
     if (!address.lastName) e.lastName = "Required";
     if (!address.email || !/^\S+@\S+\.\S+$/.test(address.email)) e.email = "Invalid email";
-    if (!address.phone || !/^\d{7,15}$/.test(address.phone)) e.phone = "Invalid phone";
+    if (!address.mobile || !/^\d{7,15}$/.test(address.mobile)) e.mobile = "Invalid phone";
     if (!address.fullAddress) e.fullAddress = "Required";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
   const applyCoupon = async () => {
-    if (!coupon) return toast.push("Enter coupon code", "info");
+    if (!coupon)
+      return Swal.fire("Info", "Please enter a coupon code.", "info");
     try {
       const res = await axios.post(
         `${config.BASE_URL}coupon/apply`,
@@ -193,13 +199,21 @@ export default function CheckoutPage() {
         }
       );
       setDiscount(res.data.discount || 0);
-      toast.push(`Coupon applied: ₹${res.data.discount || 0} off`, "success");
+      Swal.fire("Success", `Coupon applied: ₹${res.data.discount || 0} off`, "success");
     } catch {
-      toast.push("Invalid coupon", "error");
+      Swal.fire("Error", "Invalid coupon code", "error");
     }
   };
 
-  const createOrder = async () => {
+  const handlePayment = async () => {
+    if (!scriptLoaded || typeof window.Razorpay === "undefined") {
+      Swal.fire("Error", "Payment gateway not ready", "error");
+      return;
+    }
+
+    if (!validateAddress()) return;
+    setLoadingPayment(true);
+
     try {
       const createPayload = {
         webinarId: preparedItem.webinarId,
@@ -222,7 +236,7 @@ export default function CheckoutPage() {
       });
 
       const createData = createRes?.data || {};
-      const ordReceipt = createData?.result?.order?.orderId || "ord-doneod";
+      const ordReceipt = createData?.result?.order?.orderId || "ord-temp";
       const ordAmount = createData?.result?.order?.amount || net;
 
       const payRes = await axios.post(
@@ -237,42 +251,19 @@ export default function CheckoutPage() {
       const rOrderRaw = payData?.result?.rOrder || payData?.result?.order || {};
       const internalOrderId = payData?.result?.orderId || null;
 
-      return {
-        rOrder: {
-          id: rOrderRaw?.id,
-          amount: rOrderRaw?.amount ?? Math.round(net * 100),
-          currency: rOrderRaw?.currency || "INR",
-          receipt: rOrderRaw?.receipt || null,
-        },
-        internalOrderId: internalOrderId || null,
+      const rOrder = {
+        id: rOrderRaw?.id,
+        amount: rOrderRaw?.amount ?? Math.round(net * 100),
+        currency: rOrderRaw?.currency || "INR",
+        receipt: rOrderRaw?.receipt || null,
       };
-    } catch (err) {
-      console.error("createOrder error:", err?.response?.data || err.message);
-      toast.push("Order creation failed", "error");
-      throw err;
-    }
-  };
-
-  const handlePayment = async () => {
-    if (!scriptLoaded || typeof window.Razorpay === "undefined") {
-      toast.push("Payment gateway not ready", "error");
-      return;
-    }
-
-    if (!validateAddress()) return;
-    setLoadingPayment(true);
-
-    try {
-      const { rOrder, internalOrderId } = await createOrder();
-
-      if (!rOrder?.id) throw new Error("Razorpay order id missing");
 
       const verifyId = internalOrderId || rOrder?.receipt || null;
 
       const options = {
         key: razorpayKey,
         amount: rOrder.amount,
-        currency: rOrder.currency || "INR",
+        currency: rOrder.currency,
         name: "CAKISTOCKMARKET",
         description: preparedItem.title,
         order_id: rOrder.id,
@@ -281,48 +272,43 @@ export default function CheckoutPage() {
           email: address.email,
           contact: address.phone,
         },
-        theme: { color: "var(--accent)" },
         handler: async (resp) => {
           try {
-            const verifyUrl = `${config.BASE_URL}orders/${verifyId}/verify`;
             await axios.post(
-              verifyUrl,
+              `${config.BASE_URL}orders/${verifyId}/verify`,
               {
                 razorpay_order_id: resp.razorpay_order_id,
                 razorpay_payment_id: resp.razorpay_payment_id,
                 razorpay_signature: resp.razorpay_signature,
                 amount: rOrder.amount,
               },
-              {
-                headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
-              }
+              { headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {} }
             );
-
-            toast.push("Payment successful!", "success");
+            Swal.fire("Success", "Payment Successful!", "success");
             setStep("success");
-            setLoadingPayment(false);
             navigate("/user-dashboard");
-          } catch (verifyErr) {
-            console.error("verify error:", verifyErr);
-            toast.push("Payment verification failed", "error");
+          } catch {
+            Swal.fire("Error", "Payment verification failed", "error");
+          } finally {
             setLoadingPayment(false);
           }
         },
         modal: { ondismiss: () => setLoadingPayment(false) },
+        theme: { color: "#16a34a" },
       };
 
       const rzp = new window.Razorpay(options);
       rzp.open();
     } catch (err) {
-      console.error("handlePayment error:", err?.response?.data || err.message);
+      console.error("handlePayment error:", err);
+      Swal.fire("Error", "Payment failed to start", "error");
       setLoadingPayment(false);
-      toast.push("Payment failed to start", "error");
     }
   };
 
   if (step === "success") {
     return (
-      <div className="flex flex-col items-center justify-center h-screen gap-4 p-4 text-center">
+      <div className="flex flex-col items-center justify-center h-screen gap-4 text-center">
         <FaCheck className="text-6xl text-green-500" />
         <h2 className="text-2xl font-bold">Payment Successful!</h2>
         <p>
@@ -333,13 +319,12 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className={`min-h-screen px-4 py-8 max-w-6xl mx-auto ${dark ? "bg-gray-900 text-white" : "bg-gray-50 text-gray-900"}`}>
-      <div className="py-10">
-        <h1 className="text-xl sm:text-2xl font-bold">Checkout</h1>
-      </div>
+    <div className={`min-h-screen px-4 py-10 max-w-6xl mx-auto ${dark ? "bg-gray-900 text-white" : "bg-gray-50 text-gray-900"}`}>
+      <h1 className="text-2xl font-bold mb-6">Checkout</h1>
 
       <div className="flex flex-col lg:flex-row gap-6">
-        <div className="flex-1 bg-white dark:bg-gray-800 p-4 rounded-lg shadow space-y-4">
+        {/* LEFT SECTION */}
+        <div className="flex-1 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg space-y-4">
           <h2 className="text-lg font-semibold mb-2">Your Info</h2>
 
           {!isLoggedIn ? (
@@ -362,7 +347,7 @@ export default function CheckoutPage() {
               {errors.password && <p className="text-red-500 text-sm">{errors.password}</p>}
               <button
                 onClick={handleLogin}
-                className="w-full bg-yellow-400 hover:bg-yellow-500 py-2 rounded mt-2 font-semibold"
+                className="w-full bg-yellow-400 hover:bg-yellow-500 py-2 rounded mt-2 font-semibold transition"
               >
                 Login
               </button>
@@ -375,7 +360,7 @@ export default function CheckoutPage() {
                     type="text"
                     placeholder="First Name"
                     className="w-full p-2 rounded border text-sm"
-                    value={address.firstName}
+                    value={address.name}
                     onChange={(e) => setAddress({ ...address, firstName: e.target.value })}
                   />
                   {errors.firstName && <p className="text-red-500 text-sm">{errors.firstName}</p>}
@@ -404,10 +389,10 @@ export default function CheckoutPage() {
                 type="tel"
                 placeholder="Phone"
                 className="w-full p-2 rounded border text-sm"
-                value={address.phone}
-                onChange={(e) => setAddress({ ...address, phone: e.target.value })}
+                value={address.mobile}
+                onChange={(e) => setAddress({ ...address, mobile: e.target.value })}
               />
-              {errors.phone && <p className="text-red-500 text-sm">{errors.phone}</p>}
+              {errors.mobile && <p className="text-red-500 text-sm">{errors.mobile}</p>}
               <textarea
                 placeholder="Full Address"
                 rows={3}
@@ -427,39 +412,43 @@ export default function CheckoutPage() {
               value={coupon}
               onChange={(e) => setCoupon(e.target.value)}
             />
-            <button onClick={applyCoupon} className="bg-yellow-400 hover:bg-yellow-500 px-4 py-2 rounded font-semibold">
+            <button
+              onClick={applyCoupon}
+              className="bg-yellow-400 hover:bg-yellow-500 px-4 py-2 rounded font-semibold transition"
+            >
               Apply
             </button>
           </div>
         </div>
 
-        <div className="w-full lg:w-1/3 bg-white dark:bg-gray-800 p-4 rounded-lg shadow flex flex-col gap-4">
+        {/* RIGHT SECTION */}
+        <div className="w-full lg:w-1/3 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg flex flex-col gap-4">
           <h2 className="text-lg font-semibold mb-2">Order Summary</h2>
-          <SafeImg src={preparedItem.thumbnail} alt={preparedItem.title} className="w-full h-40 sm:h-48 object-cover rounded" />
+          <SafeImg src={preparedItem.thumbnail} alt={preparedItem.title} className="w-full h-44 object-cover rounded-lg" />
           <h3 className="font-bold text-base sm:text-lg">{preparedItem.title}</h3>
-          <p className="text-sm sm:text-base">{preparedItem.description}</p>
-          <p className="text-sm sm:text-base">Students Enrolled: {studentsDisplay}</p>
+          <p className="text-sm">{preparedItem.description}</p>
+          <p className="text-sm">Students Enrolled: {studentsDisplay}</p>
 
-          <div className="flex justify-between text-sm sm:text-base">
+          <div className="flex justify-between text-sm">
             <span>Price:</span>
             <span>₹{preparedItem.price}</span>
           </div>
 
           {discount > 0 && (
-            <div className="flex justify-between text-sm sm:text-base text-green-500">
+            <div className="flex justify-between text-sm text-green-600">
               <span>Discount:</span>
               <span>- ₹{discount}</span>
             </div>
           )}
 
-          <div className="flex justify-between font-semibold text-base sm:text-lg border-t pt-2">
+          <div className="flex justify-between font-semibold text-base border-t pt-2">
             <span>Total:</span>
             <span>{formattedNet}</span>
           </div>
 
           <button
             onClick={handlePayment}
-            className={`w-full bg-green-500 hover:bg-green-600 py-2 rounded font-bold ${loadingPayment ? "opacity-50 cursor-not-allowed" : ""}`}
+            className={`w-full bg-green-500 hover:bg-green-600 py-2 rounded font-bold transition ${loadingPayment ? "opacity-50 cursor-not-allowed" : ""}`}
             disabled={loadingPayment}
           >
             {loadingPayment ? "Processing..." : "Pay Now"}

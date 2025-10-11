@@ -161,7 +161,7 @@ const ProfileKYC = () => {
         return;
       }
 
-      const res = await axios.post(`${config.BASE_URL}kyc/submit`, formData, {
+      const res = await axios.post(`${config.BASE_URL}kyc/submit `, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${token}`,

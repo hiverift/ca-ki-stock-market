@@ -11,6 +11,7 @@ const AdminWebinarTable = () => {
   const [editId, setEditId] = useState(null);
   const [categories, setCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
+  const [errors, setErrors] = useState({});
   const [newWebinar, setNewWebinar] = useState({
     title: "",
     presenter: "",
@@ -30,26 +31,15 @@ const AdminWebinarTable = () => {
   const fetchWebinars = async () => {
     try {
       const accessToken = localStorage.getItem("accessToken");
-      if (!accessToken) {
-        console.error("No access token found");
-        setWebinars([]);
-        return;
-      }
+      if (!accessToken) return setWebinars([]);
       const res = await fetch(`${config.BASE_URL}webinars`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
-      if (!res.ok) {
-        const errorData = await res.json();
-        console.error("Error response:", errorData);
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
       const data = await res.json();
-      console.log("Fetch webinars API response:", data);
       const validWebinars = Array.isArray(data.result)
-        ? data.result.filter((w) => w && typeof w === "object" && w._id)
+        ? data.result.filter((w) => w && w._id)
         : [];
       setWebinars(validWebinars);
-      console.log("Set webinars:", validWebinars);
     } catch (err) {
       console.error("Error fetching webinars:", err);
       setWebinars([]);
@@ -65,15 +55,10 @@ const AdminWebinarTable = () => {
     const fetchCategories = async () => {
       try {
         const accessToken = localStorage.getItem("accessToken");
-        if (!accessToken) {
-          console.error("No access token found for categories");
-          setCategories([]);
-          return;
-        }
+        if (!accessToken) return setCategories([]);
         const res = await fetch(`${config.BASE_URL}categories`, {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const data = await res.json();
         setCategories(Array.isArray(data.result) ? data.result : []);
       } catch (err) {
@@ -90,18 +75,11 @@ const AdminWebinarTable = () => {
     const fetchSubCategories = async () => {
       try {
         const accessToken = localStorage.getItem("accessToken");
-        if (!accessToken) {
-          console.error("No access token found for subcategories");
-          setSubCategories([]);
-          return;
-        }
+        if (!accessToken) return setSubCategories([]);
         const res = await fetch(
           `${config.BASE_URL}categories/${newWebinar.categoryId}/subcategories`,
-          {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          }
+          { headers: { Authorization: `Bearer ${accessToken}` } }
         );
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const data = await res.json();
         setSubCategories(Array.isArray(data.result) ? data.result : []);
       } catch (err) {
@@ -112,11 +90,26 @@ const AdminWebinarTable = () => {
     fetchSubCategories();
   }, [newWebinar.categoryId]);
 
-  // Save or Update Webinar
+  // Validation & Save
   const handleSaveWebinar = async () => {
-    if (!newWebinar.title) return alert("Please enter webinar title");
-    if (!newWebinar.presenter) return alert("Please enter presenter name");
-    if (!newWebinar.youtubeVideoId) return alert("Please enter YouTube video ID");
+    const newErrors = {};
+    if (!newWebinar.title) newErrors.title = "Title is required";
+    if (!newWebinar.presenter) newErrors.presenter = "Presenter is required";
+    if (!newWebinar.youtubeVideoId)
+      newErrors.youtubeVideoId = "YouTube Video ID is required";
+    if (!newWebinar.startDate) newErrors.startDate = "Start Date is required";
+    if (!newWebinar.durationMinutes || newWebinar.durationMinutes <= 0)
+      newErrors.durationMinutes = "Duration must be greater than 0";
+    if (newWebinar.price === "" || newWebinar.price < 0)
+      newErrors.price = "Price cannot be negative";
+    if (!newWebinar.status) newErrors.status = "Status is required";
+    if (!newWebinar.description) newErrors.description = "Description is required";
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+    setErrors({}); // clear errors
 
     try {
       const url = editId
@@ -140,29 +133,17 @@ const AdminWebinarTable = () => {
         form.append("subCategoryId", newWebinar.subCategoryId);
 
       const accessToken = localStorage.getItem("accessToken");
-      if (!accessToken) {
-        alert("No access token found. Please log in again.");
-        return;
-      }
+      if (!accessToken) return alert("No access token found.");
 
       const res = await fetch(url, {
         method,
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
+        headers: { Authorization: `Bearer ${accessToken}` },
         body: form,
       });
-
       const data = await res.json();
-      console.log("Save webinar API response:", data);
-      if (!res.ok) {
-        console.error("Error saving webinar:", data);
-        return alert(data.message || "Error saving webinar");
-      }
+      if (!res.ok) return alert(data.message || "Error saving webinar");
 
-      // Refetch webinars to ensure the UI is up-to-date
       await fetchWebinars();
-
       setNewWebinar({
         title: "",
         presenter: "",
@@ -170,7 +151,7 @@ const AdminWebinarTable = () => {
         startDate: new Date(),
         durationMinutes: 0,
         price: 0,
-        status: "upcoming",
+        status: "Upcoming",
         agenda: [],
         newAgenda: "",
         youtubeVideoId: "",
@@ -179,13 +160,12 @@ const AdminWebinarTable = () => {
       });
       setEditId(null);
       setShowForm(false);
-    } catch (error) {
-      console.error("Error saving webinar:", error);
+    } catch (err) {
+      console.error(err);
       alert("Something went wrong!");
     }
   };
 
-  // Edit webinar
   const handleEditWebinar = (webinar) => {
     setNewWebinar({
       title: webinar.title || "",
@@ -203,26 +183,22 @@ const AdminWebinarTable = () => {
     });
     setEditId(webinar._id);
     setShowForm(true);
+    setErrors({});
   };
 
-  // Delete webinar
   const handleDeleteWebinar = async (id) => {
     if (!window.confirm("Are you sure you want to delete this webinar?")) return;
     try {
       const accessToken = localStorage.getItem("accessToken");
-      if (!accessToken) {
-        alert("No access token found. Please log in again.");
-        return;
-      }
+      if (!accessToken) return alert("No access token found.");
       const res = await fetch(`${config.BASE_URL}webinars/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       if (!res.ok) throw new Error("Failed to delete");
-      // Refetch webinars after deletion
       await fetchWebinars();
     } catch (err) {
-      console.error("Error deleting webinar:", err);
+      console.error(err);
       alert("Error deleting webinar");
     }
   };
@@ -248,9 +224,7 @@ const AdminWebinarTable = () => {
     <div className="p-6 bg-slate-50 min-h-screen">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl sm:text-3xl font-semibold text-gray-700">
-          Manage Webinars
-        </h2>
+        <h2 className="text-2xl sm:text-3xl font-semibold text-gray-700">Manage Webinars</h2>
         <button
           onClick={() => setShowForm(true)}
           className="flex items-center gap-2 px-4 py-2 bg-yellow-500 text-white rounded-xl shadow hover:bg-yellow-600 transition"
@@ -276,62 +250,55 @@ const AdminWebinarTable = () => {
           </thead>
           <tbody className="divide-y divide-gray-200">
             {webinars.length > 0 ? (
-              webinars
-                .filter((w) => w && w._id) // Relaxed filter to require only _id
-                .map((w, idx) => (
-                  <tr key={w._id} className="hover:bg-yellow-50 transition-all duration-200">
-                    <td className="px-4 py-3">{idx + 1}</td>
-                    <td className="px-4 py-3">{w.title || "N/A"}</td>
-                    <td className="px-4 py-3">{w.presenter || "N/A"}</td>
-                    <td className="px-4 py-3">
-                      {w.startDate ? new Date(w.startDate).toLocaleString() : "N/A"}
-                    </td>
-                    <td className="px-4 py-3">{w.durationMinutes || 0} mins</td>
-                    <td className="px-4 py-3">{w.price || 0}</td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs ${
-                          w.status === "live"
-                            ? "bg-green-500 text-white"
-                            : w.status === "upcoming"
-                            ? "bg-blue-500 text-white"
-                            : "bg-gray-400 text-white"
-                        }`}
-                      >
-                        {w.status || "N/A"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 flex justify-center gap-2">
-                      <button
-                        onClick={() => setShowDetail(w)}
-                        className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600"
-                        title="View"
-                      >
-                        <Eye size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleEditWebinar(w)}
-                        className="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
-                        title="Edit"
-                      >
-                        <Edit size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteWebinar(w._id)}
-                        className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
-                        title="Delete"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </td>
-                  </tr>
-                ))
+              webinars.map((w, idx) => (
+                <tr key={w._id} className="hover:bg-yellow-50 transition-all duration-200">
+                  <td className="px-4 py-3">{idx + 1}</td>
+                  <td className="px-4 py-3">{w.title || "N/A"}</td>
+                  <td className="px-4 py-3">{w.presenter || "N/A"}</td>
+                  <td className="px-4 py-3">{w.startDate ? new Date(w.startDate).toLocaleString() : "N/A"}</td>
+                  <td className="px-4 py-3">{w.durationMinutes || 0} mins</td>
+                  <td className="px-4 py-3">{w.price || 0}</td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs ${
+                        w.status === "Live"
+                          ? "bg-green-500 text-white"
+                          : w.status === "Upcoming"
+                          ? "bg-blue-500 text-white"
+                          : "bg-gray-400 text-white"
+                      }`}
+                    >
+                      {w.status || "N/A"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 flex justify-center gap-2">
+                    <button
+                      onClick={() => setShowDetail(w)}
+                      className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600"
+                      title="View"
+                    >
+                      <Eye size={16} />
+                    </button>
+                    <button
+                      onClick={() => handleEditWebinar(w)}
+                      className="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
+                      title="Edit"
+                    >
+                      <Edit size={16} />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteWebinar(w._id)}
+                      className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+                      title="Delete"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </td>
+                </tr>
+              ))
             ) : (
               <tr>
-                <td
-                  colSpan="8"
-                  className="px-4 py-6 text-center text-gray-500 border-t border-gray-200"
-                >
+                <td colSpan="8" className="px-4 py-6 text-center text-gray-500 border-t border-gray-200">
                   No webinars found
                 </td>
               </tr>
@@ -339,6 +306,52 @@ const AdminWebinarTable = () => {
           </tbody>
         </table>
       </div>
+
+      {/* View Modal */}
+{showDetail && (
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-y-auto max-h-[90vh] p-6 space-y-4">
+      <div className="flex justify-between items-center mb-2">
+        <h3 className="text-xl font-semibold">Webinar Details</h3>
+        <button
+          onClick={() => setShowDetail(null)}
+          className="p-2 hover:bg-gray-100 rounded-full"
+        >
+          <X size={20} />
+        </button>
+      </div>
+
+      <div className="space-y-2">
+        <p><strong>Title:</strong> {showDetail.title}</p>
+        <p><strong>Presenter:</strong> {showDetail.presenter}</p>
+        <p><strong>Description:</strong> {showDetail.description}</p>
+        <p><strong>Start Date:</strong> {new Date(showDetail.startDate).toLocaleString()}</p>
+        <p><strong>Duration:</strong> {showDetail.durationMinutes} mins</p>
+        <p><strong>Price:</strong> {showDetail.price}</p>
+        <p><strong>Status:</strong> {showDetail.status}</p>
+        <p><strong>YouTube Video ID:</strong> {showDetail.youtubeVideoId}</p>
+        <div>
+          <strong>Agenda:</strong>
+          <ul className="list-disc pl-5">
+            {showDetail.agenda.map((a, i) => (
+              <li key={i}>{a}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      <div className="flex justify-end mt-4">
+        <button
+          onClick={() => setShowDetail(null)}
+          className="px-4 py-2 border rounded hover:bg-gray-100"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
 
       {/* Add/Edit Modal */}
       {showForm && (
@@ -354,163 +367,129 @@ const AdminWebinarTable = () => {
               </button>
             </div>
 
-            {/* Form Fields */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Title */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Title <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
-                  aria-label="Title"
                   placeholder="Enter webinar title"
                   value={newWebinar.title}
                   onChange={(e) => setNewWebinar({ ...newWebinar, title: e.target.value })}
-                  className="border px-3 py-2 rounded w-full"
-                  required
+                  className={`border px-3 py-2 rounded w-full ${errors.title ? "border-red-500" : ""}`}
                 />
+                {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
               </div>
 
               {/* Presenter */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Presenter</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Presenter <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
                   placeholder="Enter presenter name"
                   value={newWebinar.presenter}
                   onChange={(e) => setNewWebinar({ ...newWebinar, presenter: e.target.value })}
-                  className="border px-3 py-2 rounded w-full"
-                  required
+                  className={`border px-3 py-2 rounded w-full ${errors.presenter ? "border-red-500" : ""}`}
                 />
+                {errors.presenter && <p className="text-red-500 text-sm mt-1">{errors.presenter}</p>}
               </div>
 
-              {/* Date & Time */}
+              {/* YouTube Video ID */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Start Date & Time
+                  YouTube Video ID <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter YouTube video ID"
+                  value={newWebinar.youtubeVideoId}
+                  onChange={(e) => setNewWebinar({ ...newWebinar, youtubeVideoId: e.target.value })}
+                  className={`border px-3 py-2 rounded w-full ${errors.youtubeVideoId ? "border-red-500" : ""}`}
+                />
+                {errors.youtubeVideoId && <p className="text-red-500 text-sm mt-1">{errors.youtubeVideoId}</p>}
+              </div>
+
+              {/* Start Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Start Date & Time <span className="text-red-500">*</span>
                 </label>
                 <DatePicker
                   selected={newWebinar.startDate}
                   onChange={(date) => setNewWebinar({ ...newWebinar, startDate: date })}
                   showTimeSelect
                   dateFormat="Pp"
-                  className="border px-3 py-2 rounded w-full"
+                  className={`border px-3 py-2 rounded w-full ${errors.startDate ? "border-red-500" : ""}`}
                 />
+                {errors.startDate && <p className="text-red-500 text-sm mt-1">{errors.startDate}</p>}
               </div>
 
               {/* Duration */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Duration (minutes)
+                  Duration (minutes) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
-                  min="0"
+                  min="1"
                   placeholder="Enter duration"
                   value={newWebinar.durationMinutes}
-                  onChange={(e) =>
-                    setNewWebinar({ ...newWebinar, durationMinutes: e.target.value })
-                  }
-                  className="border px-3 py-2 rounded w-full"
+                  onChange={(e) => setNewWebinar({ ...newWebinar, durationMinutes: e.target.value })}
+                  className={`border px-3 py-2 rounded w-full ${errors.durationMinutes ? "border-red-500" : ""}`}
                 />
+                {errors.durationMinutes && <p className="text-red-500 text-sm mt-1">{errors.durationMinutes}</p>}
               </div>
 
               {/* Price */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Price <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="number"
                   min="0"
                   placeholder="Enter price"
                   value={newWebinar.price}
                   onChange={(e) => setNewWebinar({ ...newWebinar, price: e.target.value })}
-                  className="border px-3 py-2 rounded w-full"
+                  className={`border px-3 py-2 rounded w-full ${errors.price ? "border-red-500" : ""}`}
                 />
-              </div>
-
-              {/* YouTube Video ID */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  YouTube Video ID
-                </label>
-                <input
-                  type="text"
-                  placeholder="Enter YouTube video ID"
-                  value={newWebinar.youtubeVideoId}
-                  onChange={(e) =>
-                    setNewWebinar({ ...newWebinar, youtubeVideoId: e.target.value })
-                  }
-                  className="border px-3 py-2 rounded w-full"
-                  required
-                />
+                {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price}</p>}
               </div>
 
               {/* Status */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Status <span className="text-red-500">*</span>
+                </label>
                 <select
                   value={newWebinar.status}
                   onChange={(e) => setNewWebinar({ ...newWebinar, status: e.target.value })}
-                  className="border px-3 py-2 rounded w-full"
+                  className={`border px-3 py-2 rounded w-full ${errors.status ? "border-red-500" : ""}`}
                 >
+                  <option value="">Select Status</option>
                   <option value="Upcoming">Upcoming</option>
                   <option value="Live">Live</option>
                   <option value="Recorded">Recorded</option>
                 </select>
+                {errors.status && <p className="text-red-500 text-sm mt-1">{errors.status}</p>}
               </div>
-
-              {/* Category */}
-              {/* <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                <select
-                  value={newWebinar.categoryId}
-                  onChange={(e) =>
-                    setNewWebinar({ ...newWebinar, categoryId: e.target.value })
-                  }
-                  className="border px-3 py-2 rounded w-full"
-                >
-                  <option value="">Select Category</option>
-                  {categories.map((cat) => (
-                    <option key={cat._id} value={cat._id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-              </div> */}
-
-              {/* SubCategory */}
-              {/* <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  SubCategory
-                </label>
-                <select
-                  value={newWebinar.subCategoryId}
-                  onChange={(e) =>
-                    setNewWebinar({ ...newWebinar, subCategoryId: e.target.value })
-                  }
-                  className="border px-3 py-2 rounded w-full"
-                >
-                  <option value="">Select SubCategory</option>
-                  {subCategories.map((sub) => (
-                    <option key={sub._id} value={sub._id}>
-                      {sub.name}
-                    </option>
-                  ))}
-                </select>
-              </div> */}
 
               {/* Description */}
               <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
+                  Description <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   placeholder="Enter description"
                   value={newWebinar.description}
-                  onChange={(e) =>
-                    setNewWebinar({ ...newWebinar, description: e.target.value })
-                  }
-                  className="border px-3 py-2 rounded w-full"
+                  onChange={(e) => setNewWebinar({ ...newWebinar, description: e.target.value })}
+                  className={`border px-3 py-2 rounded w-full ${errors.description ? "border-red-500" : ""}`}
                 />
+                {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
               </div>
             </div>
 
@@ -522,9 +501,7 @@ const AdminWebinarTable = () => {
                   type="text"
                   placeholder="Add Agenda Item"
                   value={newWebinar.newAgenda}
-                  onChange={(e) =>
-                    setNewWebinar({ ...newWebinar, newAgenda: e.target.value })
-                  }
+                  onChange={(e) => setNewWebinar({ ...newWebinar, newAgenda: e.target.value })}
                   className="border px-3 py-2 rounded w-full"
                 />
                 <button
@@ -563,55 +540,6 @@ const AdminWebinarTable = () => {
                 {editId ? "Update" : "Save"}
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* View Detail Modal */}
-      {showDetail && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6 space-y-4">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="text-xl font-semibold">{showDetail.title || "N/A"}</h3>
-              <button
-                onClick={() => setShowDetail(null)}
-                className="p-2 hover:bg-gray-100 rounded-full"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <p>
-              <strong>Presenter:</strong> {showDetail.presenter || "N/A"}
-            </p>
-            <p>
-              <strong>Date & Time:</strong>{" "}
-              {showDetail.startDate ? new Date(showDetail.startDate).toLocaleString() : "N/A"}
-            </p>
-            <p>
-              <strong>Duration:</strong> {showDetail.durationMinutes || 0} minutes
-            </p>
-            <p>
-              <strong>Price:</strong> {showDetail.price || 0}
-            </p>
-            <p>
-              <strong>YouTube Video ID:</strong> {showDetail.youtubeVideoId || "N/A"}
-            </p>
-            <p>
-              <strong>Status:</strong> {showDetail.status || "N/A"}
-            </p>
-            <p>
-              <strong>Description:</strong> {showDetail.description || "N/A"}
-            </p>
-            {showDetail.agenda?.length > 0 && (
-              <div>
-                <strong>Agenda:</strong>
-                <ul className="list-disc pl-5">
-                  {showDetail.agenda.map((a, i) => (
-                    <li key={i}>{a}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
           </div>
         </div>
       )}

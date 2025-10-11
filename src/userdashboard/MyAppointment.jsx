@@ -30,11 +30,11 @@ const MyAppointment = () => {
           // ✅ Extract appointments list
           const allAppointments = data.result.appointments.map((a) => ({
             ...a.details,
-            paid: a.paid,
-            latestOrder: a.orders?.[a.orders.length - 1] || null,
+            paid: a.latestOrder
+,           latestOrder: a.orders?.[a.orders.length - 1] || null,
             itemType: "appointment",
           }));
-
+          console.log("All Appointments:", allAppointments);
           setAppointments(allAppointments);
         } else {
           setAppointments([]);
@@ -51,7 +51,7 @@ const MyAppointment = () => {
   }, []);
 
   const handleItemClick = (appointment) => {
-    navigate("/appointment-details", { state: { appointment } });
+    alert("Navigating to appointment details is not implemented yet.");
   };
 
   if (loading) {
@@ -102,24 +102,33 @@ const MyAppointment = () => {
             </div>
 
             {/* ✅ Appointment Info */}
-            <h2 className="font-semibold text-lg">Appointment ID: {appointment._id.slice(-6)}</h2>
+            <h2 className="font-semibold text-lg">
+              Appointment ID: {appointment._id.slice(-6)}
+            </h2>
 
             <p className="text-gray-600 mt-1">
               <strong>Status:</strong>{" "}
               <span
                 className={
-                  appointment.status === "paid" || appointment.paid
+                  appointment.latestOrder.status === "paid" || appointment.paid
                     ? "text-green-600"
                     : "text-red-600"
                 }
               >
-                {appointment.status || (appointment.paid ? "paid" : "unpaid")}
+                { appointment.latestOrder.status || ( appointment.latestOrder.status ? "paid" : "unpaid")}
               </span>
             </p>
 
             {appointment.amount && (
               <p className="text-gray-600 mt-1">
-                <strong>Amount:</strong> ₹{appointment.amount / 100}
+                <strong>Amount:</strong> ₹
+                {new Intl.NumberFormat("en-IN", {
+                  style: "currency",
+                  currency: "INR",
+                  minimumFractionDigits: 0,
+                })
+                  .format(appointment.amount)
+                  .replace("₹", "")}
               </p>
             )}
 

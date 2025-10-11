@@ -160,12 +160,7 @@ export default function CourseHero() {
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     <FaLock className="text-white text-3xl" />
                     <p className="text-black font-bold text-sm mt-2">Enroll or Subscribe to Unlock</p>
-                    <button
-                      onClick={() => handleEnroll(course)}
-                      className="mt-2 bg-yellow-400 hover:bg-yellow-500 px-3 py-1 rounded-lg text-sm text-black"
-                    >
-                      Enroll Now
-                    </button>
+                   
                   </div>
                 </div>
               )}

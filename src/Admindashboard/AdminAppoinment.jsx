@@ -16,29 +16,37 @@ const AdminAppointment = () => {
     "16:00",
   ];
 
+  // Convert to 12-hour format
+  const formatTime12Hour = (time) => {
+    let [hour, minute] = time.split(":").map(Number);
+    const ampm = hour >= 12 ? "PM" : "AM";
+    hour = hour % 12 || 12;
+    return `${hour}:${minute.toString().padStart(2, "0")} ${ampm}`;
+  };
 
-  // Function to convert to 12-hour format with AM/PM
-const formatTime12Hour = (time) => {
-  let [hour, minute] = time.split(":").map(Number);
-  const ampm = hour >= 12 ? "PM" : "AM";
-  hour = hour % 12 || 12;
-  return `${hour}:${minute.toString().padStart(2, "0")} ${ampm}`;
-};
+  // Convert Date object to yyyy-mm-dd in local time
+  const formatDateLocal = (date) => {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+const [fromDate, setFromDate] = useState(new Date()); // default today
+const [toDate, setToDate] = useState(new Date()); // ya agar chaho next day: new Date(new Date().getTime() + 24*60*60*1000)
 
-  const [fromDate, setFromDate] = useState(null);
-  const [toDate, setToDate] = useState(null);
   const [selectedTimes, setSelectedTimes] = useState([]);
   const [serviceId, setServiceId] = useState("");
   const [capacity, setCapacity] = useState("");
   const [savedSlots, setSavedSlots] = useState([]);
   const [services, setServices] = useState([]);
 
-  // 🔹 API se service list fetch karna
+  // Fetch services from API
   useEffect(() => {
     const fetchServices = async () => {
       try {
         const res = await axios.get(`${BASE_URL}/services`);
-        setServices(res.data.result || []); // API ke response ke structure ke hisaab se adjust karna
+        setServices(res.data.result || []);
       } catch (err) {
         console.error("Error fetching services:", err);
       }
@@ -46,7 +54,7 @@ const formatTime12Hour = (time) => {
     fetchServices();
   }, []);
 
-  // time toggle
+  // Toggle time selection
   const toggleTime = (time) => {
     if (selectedTimes.includes(time)) {
       setSelectedTimes(selectedTimes.filter((t) => t !== time));
@@ -55,39 +63,44 @@ const formatTime12Hour = (time) => {
     }
   };
 
-  // save slot
- const handleSaveSlots = async () => {
-  if (!serviceId || !fromDate || !toDate || selectedTimes.length === 0) {
-    alert("Please select Service, From date, To date and Times");
-    return;
-  }
-
-  const payload = {
-    serviceId,
-    from: fromDate.toISOString().split("T")[0],
-    to: toDate.toISOString().split("T")[0],
-    capacity,
-    times: selectedTimes,
-  };
-
-  try {
-    const res = await axios.post(`${BASE_URL}/admin/slots/bulk`, payload);
-    if (res.status === 200 || res.status === 201) {
-      alert("✅ Slots saved successfully!");
-      setSavedSlots([...savedSlots, payload]);
-
-      // reset
-      setServiceId("");
-      setFromDate(null);
-      setToDate(null);
-      setSelectedTimes([]);
-      setCapacity("");
+  // Save slots
+  const handleSaveSlots = async () => {
+    if (!serviceId || !fromDate || !toDate || selectedTimes.length === 0 || !capacity) {
+      alert("Please select Service, From date, To date, Times, and Capacity");
+      return;
     }
-  } catch (err) {
-    console.error("Error saving slots:", err);
-    alert("❌ Failed to save slots. Check console for details.");
-  }
-};
+
+    const payload = {
+      serviceId,
+      from: formatDateLocal(fromDate),
+      to: formatDateLocal(toDate),
+      capacity: Number(capacity),
+      times: selectedTimes,
+    };
+
+    console.log("Saving slots payload:", payload);
+    console.log("POST URL:", `${BASE_URL}/admin/slots/bulk`);
+
+    try {
+      const res = await axios.post(`${BASE_URL}/admin/slots/bulk`, payload);
+      console.log("API response:", res);
+
+      if (res.status === 200 || res.status === 201) {
+        alert("✅ Slots saved successfully!");
+        setSavedSlots([...savedSlots, payload]);
+
+        // Reset fields
+        setServiceId("");
+        setFromDate(null);
+        setToDate(null);
+        setSelectedTimes([]);
+        setCapacity("");
+      }
+    } catch (err) {
+      console.error("Error saving slots:", err.response || err);
+      alert("❌ Failed to save slots. Check console for details.");
+    }
+  };
 
   return (
     <div className="p-8 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
@@ -120,14 +133,12 @@ const formatTime12Hour = (time) => {
             </div>
 
             <div>
-              <p className="text-sm font-medium text-gray-600 mb-1">
-                From Date
-              </p>
+              <p className="text-sm font-medium text-gray-600 mb-1">From Date</p>
               <DatePicker
-                selected={fromDate}
-                onChange={(date) => setFromDate(date)}
-                minDate={new Date()}
-                placeholderText="Select from date"
+              selected={fromDate}
+  onChange={(date) => setFromDate(date)}
+  minDate={new Date()}
+  placeholderText="Select from date"
                 className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-yellow-400 outline-none"
               />
             </div>
@@ -135,27 +146,26 @@ const formatTime12Hour = (time) => {
             <div>
               <p className="text-sm font-medium text-gray-600 mb-1">To Date</p>
               <DatePicker
-                selected={toDate}
-                onChange={(date) => setToDate(date)}
-                minDate={fromDate || new Date()}
-                placeholderText="Select to date"
+               selected={toDate}
+  onChange={(date) => setToDate(date)}
+  minDate={fromDate || new Date()}
+  placeholderText="Select to date"
                 className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-yellow-400 outline-none"
               />
             </div>
 
             <div>
               <p className="text-sm font-medium text-gray-600 mb-1">Capacity</p>
-     <input
-  type="number"
-  value={capacity}
-  min={1} // negative prevent
-  onChange={(e) => {
-    const val = e.target.value;
-    setCapacity(val === "" ? "" : Number(val));
-  }}
-  className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-yellow-400 outline-none"
-/>
-
+              <input
+                type="number"
+                value={capacity}
+                min={1}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setCapacity(val === "" ? "" : Number(val));
+                }}
+                className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-yellow-400 outline-none"
+              />
             </div>
           </div>
         </div>
@@ -166,25 +176,21 @@ const formatTime12Hour = (time) => {
             Select Available Times
           </h3>
 
-          
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {defaultTimes.map((time) => (
-  <button
-    key={time}
-    onClick={() => toggleTime(time)}
-    className={`px-4 py-2 rounded-xl border text-sm font-medium transition ${
-      selectedTimes.includes(time)
-        ? "bg-yellow-500 text-white border-yellow-500 shadow"
-        : "bg-gray-50 text-gray-700 border-gray-300 hover:bg-yellow-50"
-    }`}
-  >
-    {formatTime12Hour(time)}
-  </button>
-))}
-
+            {defaultTimes.map((time) => (
+              <button
+                key={time}
+                onClick={() => toggleTime(time)}
+                className={`px-4 py-2 rounded-xl border text-sm font-medium transition ${
+                  selectedTimes.includes(time)
+                    ? "bg-yellow-500 text-white border-yellow-500 shadow"
+                    : "bg-gray-50 text-gray-700 border-gray-300 hover:bg-yellow-50"
+                }`}
+              >
+                {formatTime12Hour(time)}
+              </button>
+            ))}
           </div>
-
-
         </div>
 
         {/* Save Button */}
@@ -230,9 +236,7 @@ const formatTime12Hour = (time) => {
                       <td className="p-3 border">{slot.from}</td>
                       <td className="p-3 border">{slot.to}</td>
                       <td className="p-3 border">{slot.capacity}</td>
-                      <td className="p-3 border">
-                        {slot.times.join(", ")}
-                      </td>
+                      <td className="p-3 border">{slot.times.join(", ")}</td>
                     </tr>
                   );
                 })}

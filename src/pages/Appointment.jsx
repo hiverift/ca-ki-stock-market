@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Calendar, momentLocalizer, Views } from "react-big-calendar";
-import moment from "moment";
+import moment from "moment-timezone";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import {
   getServices,
@@ -17,7 +17,6 @@ export default function AppointmentPage() {
 
   const [step, setStep] = useState(1);
   const [date, setDate] = useState(new Date());
-  const [view, setView] = useState(Views.MONTH);
   const [selectedDate, setSelectedDate] = useState(null);
   const [services, setServices] = useState([]);
   const [selectedService, setSelectedService] = useState(null);
@@ -30,6 +29,8 @@ export default function AppointmentPage() {
   const [loginError, setLoginError] = useState("");
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [postLoginAction, setPostLoginAction] = useState(null);
+
+  const [availableDates, setAvailableDates] = useState([]); // Dates with slots
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -105,6 +106,7 @@ export default function AppointmentPage() {
     return true;
   };
 
+  // Fetch services
   useEffect(() => {
     (async () => {
       setIsLoading(true);
@@ -121,38 +123,48 @@ export default function AppointmentPage() {
     })();
   }, []);
 
+  // Fetch availability & process slots in IST
   useEffect(() => {
     (async () => {
       try {
-        if (!selectedService || !selectedDate) {
+        if (!selectedService) {
           setSlotsForDate([]);
+          setAvailableDates([]);
           return;
         }
         setIsLoading(true);
+
         const serviceId = selectedService._id ?? selectedService.id;
-        const month = moment(selectedDate).format("YYYY-MM");
+        const month = moment(selectedDate || new Date()).format("YYYY-MM");
         const raw = await getAvailability(serviceId, month);
         const payload = raw && raw.result ? raw.result : raw;
         const slots = Array.isArray(payload) ? payload : [];
-        const dayIso = moment(selectedDate).utcOffset(0, true).format("YYYY-MM-DD");
 
-        const filtered = slots
+        const processedSlots = slots
           .map((s) => {
-            const start = s.start ? new Date(s.start) : null;
+            const startUtc = s.start ? moment.utc(s.start) : null;
+            const endUtc = s.end ? moment.utc(s.end) : null;
+
+            // Convert to IST
+            const startIST = startUtc ? startUtc.tz("Asia/Kolkata").toDate() : null;
+            const endIST = endUtc ? endUtc.tz("Asia/Kolkata").toDate() : startIST;
+
             return {
               ...s,
-              _startDate: start,
-              sDayUtc: start ? moment(start).utc().format("YYYY-MM-DD") : null,
-              label: start ? moment(start).local().format("hh:mm A") : "",
+              _startDate: startIST,
+              _endDate: endIST,
+              sDayUtc: startIST ? moment(startIST).format("YYYY-MM-DD") : null,
+              label: startIST ? moment(startIST).format("hh:mm A") : "",
               seatsLeft: s.seatsLeft ?? s.capacity ?? 1,
               id: s._id ?? s.id,
             };
           })
-          .filter((s) => s._startDate && s.sDayUtc === dayIso && (s.seatsLeft ?? 0) > 0);
+          .filter((s) => s._startDate && (s.seatsLeft ?? 0) > 0);
 
+        // Unique slots by day & time
         const unique = [];
         const seen = new Set();
-        for (const f of filtered) {
+        for (const f of processedSlots) {
           const key = `${f.sDayUtc}_${f.label}`;
           if (!seen.has(key)) {
             seen.add(key);
@@ -160,13 +172,24 @@ export default function AppointmentPage() {
               id: f.id,
               label: f.label,
               start: f._startDate,
-              end: f.end ? new Date(f.end) : null,
+              end: f._endDate,
               seatsLeft: f.seatsLeft,
               raw: f,
             });
           }
         }
-        setSlotsForDate(unique);
+
+        // Set available dates
+        const datesSet = new Set(unique.map((s) => moment(s.start).startOf("day").toISOString()));
+        setAvailableDates(Array.from(datesSet));
+
+        // Filter slots for selectedDate
+        if (selectedDate) {
+          const dayIso = moment(selectedDate).startOf("day").toISOString();
+          setSlotsForDate(unique.filter((s) => moment(s.start).startOf("day").toISOString() === dayIso));
+        } else {
+          setSlotsForDate([]);
+        }
       } catch (err) {
         console.error("Availability error", err);
         setSlotsForDate([]);
@@ -180,6 +203,15 @@ export default function AppointmentPage() {
   const handleSelectSlotOnCalendar = (slotInfo) => {
     const clickedDate = moment(slotInfo.start).startOf("day");
     const today = moment().startOf("day");
+
+    const isAvailable = availableDates.some((d) =>
+      moment(d).isSame(clickedDate, "day")
+    );
+
+    if (!isAvailable) {
+      alert("No slots available on this date");
+      return;
+    }
 
     if (clickedDate.isBefore(today)) {
       alert("You cannot book a past date!");
@@ -199,11 +231,11 @@ export default function AppointmentPage() {
           serviceId: selectedService?._id ?? selectedService?.id,
           slotId: selectedSlot?.id,
           date: moment(selectedDate).format("YYYY-MM-DD"),
-          userId:"68b1a01074ad0c19f272b438"
+          userId: "68b1a01074ad0c19f272b438",
         };
 
         const bookingResult = await createBooking(bookingPayload, token);
-         
+
         if (!bookingResult || !bookingResult.bookingId) {
           alert("Booking creation failed");
           return;
@@ -215,7 +247,7 @@ export default function AppointmentPage() {
             appointmentId: bookingResult.bookingId,
             title: selectedService?.name,
             description: `Appointment on ${moment(selectedDate).format("DD MMM YYYY")} at ${selectedSlot?.label}`,
-    price: Number(selectedService?.price) || 0,
+            price: Number(selectedService?.price) || 0,
             slot: selectedSlot,
             date: selectedDate,
             serviceId: selectedService?._id ?? selectedService?.id,
@@ -249,7 +281,7 @@ export default function AppointmentPage() {
             </div>
           ))}
 
-          {!isAuthenticated ? (
+          {/* {!isAuthenticated ? (
             <div className="mt-4 p-3 bg-red-50 border border-red-100 rounded text-sm text-red-700">
               Login required to book.
               <div className="mt-2 flex gap-2">
@@ -271,7 +303,7 @@ export default function AppointmentPage() {
             <div className="mt-4 p-3 bg-green-50 border border-green-100 rounded text-sm text-green-700">
               Logged in as {localStorage.getItem("userName") || "User"} — you can book appointments.
             </div>
-          )}
+          )} */}
         </div>
 
         {/* Main Step Content */}
@@ -316,7 +348,7 @@ export default function AppointmentPage() {
             </>
           )}
 
-          {/* Step 2: Select Date & Slot */}
+          {/* Step 2: Calendar & Slots */}
           {step === 2 && !isLoading && (
             <>
               <h2 className="text-xl font-semibold mb-4">Choose Date & Time</h2>
@@ -338,7 +370,18 @@ export default function AppointmentPage() {
                 onNavigate={(newDate) => setDate(newDate)}
                 onSelectSlot={handleSelectSlotOnCalendar}
                 onDrillDown={(date, view) => setSelectedDate(date)}
+                dayPropGetter={(date) => {
+                  const isAvailable = availableDates.some((d) =>
+                    moment(d).isSame(date, "day")
+                  );
+                  return {
+                    className: isAvailable
+                      ? ""
+                      : "bg-gray-100 text-gray-300 pointer-events-none",
+                  };
+                }}
               />
+
               {selectedDate && (
                 <>
                   <h3 className="font-medium mt-4 mb-2">
@@ -378,6 +421,7 @@ export default function AppointmentPage() {
                   </div>
                 </>
               )}
+
               <div className="mt-6 flex justify-between">
                 <button
                   onClick={() => setStep(1)}
@@ -439,7 +483,7 @@ export default function AppointmentPage() {
       </div>
 
       {/* Login Modal */}
-      {showLoginModal && (
+      {/* {showLoginModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-6">
             <h3 className="text-lg font-semibold mb-2">Login to continue</h3>
@@ -492,7 +536,10 @@ export default function AppointmentPage() {
             </div>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 }
+
+
+
