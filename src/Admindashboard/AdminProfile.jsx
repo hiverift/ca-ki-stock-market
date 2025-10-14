@@ -35,6 +35,8 @@ const AdminProfile = () => {
     if (token) fetchProfile();
   }, [token]);
 
+  
+
   // ✅ Input change handler
   const handleProfileChange = (e) => {
     const { name, value } = e.target;

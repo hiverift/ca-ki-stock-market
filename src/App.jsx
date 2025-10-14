@@ -47,6 +47,8 @@ import SubcategorySection from "./Admindashboard/SubcategorySection";
 import AdminServiceAdd from "./Admindashboard/AdminServices";
 import AdminProfile from "./Admindashboard/AdminProfile";
 import Adminorder from "./Admindashboard/Adminorder";
+import { Toaster } from "react-hot-toast";
+
 
 // -------- ProtectedRoute component --------
 const ProtectedRoute = ({ children, role }) => {
@@ -105,6 +107,7 @@ const AppWrapper = ({ children }) => {
 function App() {
   return (
     <Router>
+
       <AppWrapper>
         <Routes>
           {/* Main site routes */}
@@ -163,8 +166,12 @@ function App() {
           </Route>
 
           <Route path="*" element={<NotFount />} />
+        
         </Routes>
+        
       </AppWrapper>
+
+    <Toaster position="top-right" reverseOrder={false} />
     </Router>
   );
 }

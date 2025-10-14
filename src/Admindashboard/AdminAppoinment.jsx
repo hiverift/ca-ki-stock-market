@@ -32,8 +32,8 @@ const AdminAppointment = () => {
     const day = String(d.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
   };
-const [fromDate, setFromDate] = useState(new Date()); // default today
-const [toDate, setToDate] = useState(new Date()); // ya agar chaho next day: new Date(new Date().getTime() + 24*60*60*1000)
+  const [fromDate, setFromDate] = useState(new Date()); // default today
+  const [toDate, setToDate] = useState(new Date()); // ya agar chaho next day: new Date(new Date().getTime() + 24*60*60*1000)
 
   const [selectedTimes, setSelectedTimes] = useState([]);
   const [serviceId, setServiceId] = useState("");
@@ -135,10 +135,10 @@ const [toDate, setToDate] = useState(new Date()); // ya agar chaho next day: new
             <div>
               <p className="text-sm font-medium text-gray-600 mb-1">From Date</p>
               <DatePicker
-              selected={fromDate}
-  onChange={(date) => setFromDate(date)}
-  minDate={new Date()}
-  placeholderText="Select from date"
+                selected={fromDate}
+                onChange={(date) => setFromDate(date)}
+                minDate={new Date()}
+                placeholderText="Select from date"
                 className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-yellow-400 outline-none"
               />
             </div>
@@ -146,10 +146,10 @@ const [toDate, setToDate] = useState(new Date()); // ya agar chaho next day: new
             <div>
               <p className="text-sm font-medium text-gray-600 mb-1">To Date</p>
               <DatePicker
-               selected={toDate}
-  onChange={(date) => setToDate(date)}
-  minDate={fromDate || new Date()}
-  placeholderText="Select to date"
+                selected={toDate}
+                onChange={(date) => setToDate(date)}
+                minDate={fromDate || new Date()}
+                placeholderText="Select to date"
                 className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-yellow-400 outline-none"
               />
             </div>
@@ -181,11 +181,10 @@ const [toDate, setToDate] = useState(new Date()); // ya agar chaho next day: new
               <button
                 key={time}
                 onClick={() => toggleTime(time)}
-                className={`px-4 py-2 rounded-xl border text-sm font-medium transition ${
-                  selectedTimes.includes(time)
-                    ? "bg-yellow-500 text-white border-yellow-500 shadow"
-                    : "bg-gray-50 text-gray-700 border-gray-300 hover:bg-yellow-50"
-                }`}
+                className={`px-4 py-2 rounded-xl border text-sm font-medium transition ${selectedTimes.includes(time)
+                  ? "bg-yellow-500 text-white border-yellow-500 shadow"
+                  : "bg-gray-50 text-gray-700 border-gray-300 hover:bg-yellow-50"
+                  }`}
               >
                 {formatTime12Hour(time)}
               </button>
@@ -204,46 +203,51 @@ const [toDate, setToDate] = useState(new Date()); // ya agar chaho next day: new
         </div>
 
         {/* Saved Slots List */}
-        <div className="bg-white p-8 rounded-2xl shadow-lg">
+        <div className="bg-white rounded-3xl shadow-2xl p-6 mt-6 overflow-hidden">
           <h3 className="text-xl font-semibold text-gray-700 mb-6 border-b pb-3">
-            Saved Slots
+            📋 Saved Slots
           </h3>
+
           {savedSlots.length === 0 ? (
             <p className="text-gray-500 text-center py-6">
               No slots added yet.
             </p>
           ) : (
-            <table className="w-full border-collapse text-sm">
-              <thead>
-                <tr className="bg-gray-100 text-gray-700">
-                  <th className="p-3 border">Service</th>
-                  <th className="p-3 border">From</th>
-                  <th className="p-3 border">To</th>
-                  <th className="p-3 border">Capacity</th>
-                  <th className="p-3 border">Times</th>
-                </tr>
-              </thead>
-              <tbody>
-                {savedSlots.map((slot, index) => {
-                  const serviceName =
-                    services.find((s) => s._id === slot.serviceId)?.name || "-";
-                  return (
-                    <tr
-                      key={index}
-                      className="hover:bg-gray-50 text-center transition"
-                    >
-                      <td className="p-3 border">{serviceName}</td>
-                      <td className="p-3 border">{slot.from}</td>
-                      <td className="p-3 border">{slot.to}</td>
-                      <td className="p-3 border">{slot.capacity}</td>
-                      <td className="p-3 border">{slot.times.join(", ")}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <div className="overflow-x-auto">
+              <table className="min-w-full border-collapse">
+                <thead>
+                  <tr className="bg-gray-100 text-gray-600 text-sm">
+                    <th className="px-4 py-3 text-left border-b">Service</th>
+                    <th className="px-4 py-3 text-left border-b">From</th>
+                    <th className="px-4 py-3 text-left border-b">To</th>
+                    <th className="px-4 py-3 text-left border-b">Capacity</th>
+                    <th className="px-4 py-3 text-left border-b">Times</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {savedSlots.map((slot, index) => {
+                    const serviceName =
+                      services.find((s) => s._id === slot.serviceId)?.name || "-";
+                    return (
+                      <tr
+                        key={index}
+                        className="border-b hover:bg-gray-50 text-sm whitespace-nowrap transition last:rounded-b-3xl"
+                      >
+                        <td className="px-4 py-3">{serviceName}</td>
+                        <td className="px-4 py-3">{slot.from}</td>
+                        <td className="px-4 py-3">{slot.to}</td>
+                        <td className="px-4 py-3">{slot.capacity}</td>
+                        <td className="px-4 py-3">{slot.times.join(", ")}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
+
+
       </div>
     </div>
   );

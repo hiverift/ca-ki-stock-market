@@ -260,40 +260,44 @@ const AdminWebinarTable = () => {
                   <td className="px-4 py-3">{w.price || 0}</td>
                   <td className="px-4 py-3">
                     <span
-                      className={`px-2 py-1 rounded-full text-xs ${
-                        w.status === "Live"
+                      className={`px-2 py-1 rounded-full text-xs ${w.status === "Live"
                           ? "bg-green-500 text-white"
                           : w.status === "Upcoming"
-                          ? "bg-blue-500 text-white"
-                          : "bg-gray-400 text-white"
-                      }`}
+                            ? "bg-blue-500 text-white"
+                            : "bg-gray-400 text-white"
+                        }`}
                     >
                       {w.status || "N/A"}
                     </span>
                   </td>
-                  <td className="px-4 py-3 flex justify-center gap-2">
-                    <button
-                      onClick={() => setShowDetail(w)}
-                      className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600"
-                      title="View"
-                    >
-                      <Eye size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleEditWebinar(w)}
-                      className="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
-                      title="Edit"
-                    >
-                      <Edit size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteWebinar(w._id)}
-                      className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
-                      title="Delete"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                  <td className="px-4 py-3 text-center">
+                    <div className="flex justify-center items-center gap-2">
+                      <button
+                        onClick={() => setShowDetail(w)}
+                        className="flex items-center justify-center w-8 h-8 bg-green-500 hover:bg-green-600 text-white rounded"
+                        title="View"
+                      >
+                        <Eye size={16} />
+                      </button>
+
+                      <button
+                        onClick={() => handleEditWebinar(w)}
+                        className="flex items-center justify-center w-8 h-8 bg-blue-500 hover:bg-blue-600 text-white rounded"
+                        title="Edit"
+                      >
+                        <Edit size={16} />
+                      </button>
+
+                      <button
+                        onClick={() => handleDeleteWebinar(w._id)}
+                        className="flex items-center justify-center w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded"
+                        title="Delete"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </td>
+
                 </tr>
               ))
             ) : (
@@ -308,49 +312,49 @@ const AdminWebinarTable = () => {
       </div>
 
       {/* View Modal */}
-{showDetail && (
-  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-    <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-y-auto max-h-[90vh] p-6 space-y-4">
-      <div className="flex justify-between items-center mb-2">
-        <h3 className="text-xl font-semibold">Webinar Details</h3>
-        <button
-          onClick={() => setShowDetail(null)}
-          className="p-2 hover:bg-gray-100 rounded-full"
-        >
-          <X size={20} />
-        </button>
-      </div>
+      {showDetail && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-y-auto max-h-[90vh] p-6 space-y-4">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-xl font-semibold">Webinar Details</h3>
+              <button
+                onClick={() => setShowDetail(null)}
+                className="p-2 hover:bg-gray-100 rounded-full"
+              >
+                <X size={20} />
+              </button>
+            </div>
 
-      <div className="space-y-2">
-        <p><strong>Title:</strong> {showDetail.title}</p>
-        <p><strong>Presenter:</strong> {showDetail.presenter}</p>
-        <p><strong>Description:</strong> {showDetail.description}</p>
-        <p><strong>Start Date:</strong> {new Date(showDetail.startDate).toLocaleString()}</p>
-        <p><strong>Duration:</strong> {showDetail.durationMinutes} mins</p>
-        <p><strong>Price:</strong> {showDetail.price}</p>
-        <p><strong>Status:</strong> {showDetail.status}</p>
-        <p><strong>YouTube Video ID:</strong> {showDetail.youtubeVideoId}</p>
-        <div>
-          <strong>Agenda:</strong>
-          <ul className="list-disc pl-5">
-            {showDetail.agenda.map((a, i) => (
-              <li key={i}>{a}</li>
-            ))}
-          </ul>
+            <div className="space-y-2">
+              <p><strong>Title:</strong> {showDetail.title}</p>
+              <p><strong>Presenter:</strong> {showDetail.presenter}</p>
+              <p><strong>Description:</strong> {showDetail.description}</p>
+              <p><strong>Start Date:</strong> {new Date(showDetail.startDate).toLocaleString()}</p>
+              <p><strong>Duration:</strong> {showDetail.durationMinutes} mins</p>
+              <p><strong>Price:</strong> {showDetail.price}</p>
+              <p><strong>Status:</strong> {showDetail.status}</p>
+              <p><strong>YouTube Video ID:</strong> {showDetail.youtubeVideoId}</p>
+              <div>
+                <strong>Agenda:</strong>
+                <ul className="list-disc pl-5">
+                  {showDetail.agenda.map((a, i) => (
+                    <li key={i}>{a}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            <div className="flex justify-end mt-4">
+              <button
+                onClick={() => setShowDetail(null)}
+                className="px-4 py-2 border rounded hover:bg-gray-100"
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
-
-      <div className="flex justify-end mt-4">
-        <button
-          onClick={() => setShowDetail(null)}
-          className="px-4 py-2 border rounded hover:bg-gray-100"
-        >
-          Close
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+      )}
 
 
       {/* Add/Edit Modal */}
