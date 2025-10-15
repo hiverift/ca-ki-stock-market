@@ -231,8 +231,7 @@ const AdminAppointment = () => {
                     return (
                       <tr
                         key={index}
-                        className="border-b hover:bg-gray-50 text-sm whitespace-nowrap transition last:rounded-b-3xl"
-                      >
+className="border-b border-gray-200 hover:bg-gray-50/50 transition-all text-sm whitespace-nowrap"                      >
                         <td className="px-4 py-3">{serviceName}</td>
                         <td className="px-4 py-3">{slot.from}</td>
                         <td className="px-4 py-3">{slot.to}</td>

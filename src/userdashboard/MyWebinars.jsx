@@ -41,18 +41,18 @@ const MyWebinars = () => {
         //     itemType: webinar.itemType,
         //     itemId: webinar.itemId,
         //   }));
-     console.log("Fetched webinars data:", data);
+        console.log("Fetched webinars data:", data);
 
-const webinarsData = data.result.webinars.flatMap((c) =>
-  c.orders.map((order) => ({
-    ...c.details,       // webinar details
-    itemType: "webinar",
-    paid: c.paid,
-    order,               // attach order info
-  }))
-);
+        const webinarsData = data.result.webinars.flatMap((c) =>
+          c.orders.map((order) => ({
+            ...c.details,       // webinar details
+            itemType: "webinar",
+            paid: c.paid,
+            order,               // attach order info
+          }))
+        );
 
-console.log("Processed webinars:", webinarsData);
+        console.log("Processed webinars:", webinarsData);
 
         setWebinars(webinarsData);
       } catch (err) {
@@ -96,7 +96,7 @@ console.log("Processed webinars:", webinarsData);
       <h1 className="text-2xl font-bold mb-6">My Webinars</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {webinars.map((webinar,index) => (
+        {webinars.map((webinar, index) => (
           <div
             key={index}
             className="bg-white p-4 rounded-xl shadow-md border border-gray-200 flex flex-col cursor-pointer hover:shadow-lg transition"

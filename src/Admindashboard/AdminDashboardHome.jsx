@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Users, BookOpen, DollarSign, Video, FileText, TrendingUp, Download } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid , Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts';
 import config from '../pages/config';
 
 const AdminDashboardHome = () => {
@@ -31,23 +31,31 @@ const AdminDashboardHome = () => {
 
   const metrics = dashboardData
     ? [
-        { title: 'Total Users', value: dashboardData.totalUsers, icon: Users, bgColor: 'bg-blue-50', iconColor: 'text-blue-500' },
-        { title: 'Active Courses', value: dashboardData.activeCourses, icon: BookOpen, bgColor: 'bg-green-50', iconColor: 'text-green-500' },
-        { title: 'Monthly Revenue', value: `₹${dashboardData.monthlyRevenue.toLocaleString()}`, icon: DollarSign, bgColor: 'bg-yellow-50', iconColor: 'text-yellow-600' },
-        { title: 'Live Webinars', value: dashboardData.liveWebinars, icon: Video, bgColor: 'bg-red-50', iconColor: 'text-red-500' },
-        { title: 'Pending KYC', value: dashboardData.pendingKYC, icon: FileText, bgColor: 'bg-orange-50', iconColor: 'text-orange-500' },
-        { title: 'Growth Rate', value: `+${dashboardData.growthRate}%`, icon: TrendingUp, bgColor: 'bg-purple-50', iconColor: 'text-purple-500' },
-      ]
+      { title: 'Total Users', value: dashboardData.totalUsers, icon: Users, bgColor: 'bg-blue-50', iconColor: 'text-blue-500' },
+      // { title: 'Active Courses', value: dashboardData.activeCourses, icon: BookOpen, bgColor: 'bg-green-50', iconColor: 'text-green-500' },
+      {
+        title: 'Active Courses',
+        value: dashboardData.activeCourses || dashboardData.totalActiveCourses || 0, 
+        icon: BookOpen,
+        bgColor: 'bg-green-50',
+        iconColor: 'text-green-500'
+      },
+
+      { title: 'Monthly Revenue', value: `₹${dashboardData.monthlyRevenue.toLocaleString()}`, icon: DollarSign, bgColor: 'bg-yellow-50', iconColor: 'text-yellow-600' },
+      { title: 'Live Webinars', value: dashboardData.liveWebinars, icon: Video, bgColor: 'bg-red-50', iconColor: 'text-red-500' },
+      { title: 'Pending KYC', value: dashboardData.pendingKYC, icon: FileText, bgColor: 'bg-orange-50', iconColor: 'text-orange-500' },
+      { title: 'Growth Rate', value: `+${dashboardData.growthRate}%`, icon: TrendingUp, bgColor: 'bg-purple-50', iconColor: 'text-purple-500' },
+    ]
     : [];
 
   const chartData = dashboardData
     ? [
-        { name: 'Users', value: dashboardData.totalUsers },
-        { name: 'Courses', value: dashboardData.activeCourses },
-        { name: 'Revenue', value: dashboardData.monthlyRevenue },
-        { name: 'Webinars', value: dashboardData.liveWebinars },
-        { name: 'KYC', value: dashboardData.pendingKYC },
-      ]
+      { name: 'Users', value: dashboardData.totalUsers },
+      { name: 'Courses', value: dashboardData.activeCourses },
+      { name: 'Revenue', value: dashboardData.monthlyRevenue },
+      { name: 'Webinars', value: dashboardData.liveWebinars },
+      { name: 'KYC', value: dashboardData.pendingKYC },
+    ]
     : [];
 
   // Export metrics + chart data to CSV
@@ -124,30 +132,30 @@ const AdminDashboardHome = () => {
         {/* Graph Section */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <h2 className="text-lg font-semibold mb-4">Platform Overview</h2>
-        <ResponsiveContainer width="100%" height={300}>
-  <BarChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-    <CartesianGrid strokeDasharray="3 3" />
-    <XAxis dataKey="name" />
-    <YAxis />
-    <Tooltip />
-    <Bar dataKey="value" barSize={40}>
-      {chartData.map((entry, index) => (
-        <Cell
-          key={`cell-${index}`}
-          fill={
-            [
-              "#3b82f6", // Users - Blue
-              "#10b981", // Courses - Green
-              "#f59e0b", // Revenue - Amber
-              "#ef4444", // Webinars - Red
-              "#8b5cf6", // KYC - Purple
-            ][index % 5]
-          }
-        />
-      ))}
-    </Bar>
-  </BarChart>
-</ResponsiveContainer>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="value" barSize={40}>
+                {chartData.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={
+                      [
+                        "#3b82f6", // Users - Blue
+                        "#10b981", // Courses - Green
+                        "#f59e0b", // Revenue - Amber
+                        "#ef4444", // Webinars - Red
+                        "#8b5cf6", // KYC - Purple
+                      ][index % 5]
+                    }
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
 
         </div>
       </div>

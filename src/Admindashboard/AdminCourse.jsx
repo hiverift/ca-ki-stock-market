@@ -418,8 +418,7 @@ const AdminCourseTable = () => {
                 currentCourses.map((course, index) => (
                   <tr
                     key={course._id}
-                    className="border-b hover:bg-gray-50 text-sm whitespace-nowrap"
-                  >
+                    className="border-b border-gray-200 hover:bg-gray-50/50 transition-all text-sm whitespace-nowrap"                  >
                     <td className="px-4 py-3">{indexOfFirst + index + 1}</td>
                     <td className="px-4 py-3">{course.title}</td>
                     <td className="px-4 py-3">{course.instructor}</td>
