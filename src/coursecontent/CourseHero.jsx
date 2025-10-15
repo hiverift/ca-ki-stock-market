@@ -73,6 +73,7 @@ export default function CourseHero() {
         <p className="text-gray-600">Loading courses...</p>
       </div>
     );
+    
   }
 
   return (

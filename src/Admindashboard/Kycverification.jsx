@@ -12,18 +12,32 @@ const KycVerificationAdmin = ({ userId = "68b1a01074ad0c19f272b438" }) => {
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState("");
 
+  // Fetch KYC details
   const fetchKyc = async () => {
     try {
       setLoading(true);
+      setError(""); // reset error
       const token = localStorage.getItem("accessToken");
       const res = await axios.get(`${config.BASE_URL}kyc/status/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.data?.statusCode === 200) setKycDetails(res.data.result);
-      else setError("Failed to fetch KYC details");
+
+      if (res.data?.statusCode === 200) {
+        setKycDetails(res.data.result);
+      } else {
+        setError(res.data?.message || "Failed to fetch KYC details");
+      }
     } catch (err) {
       console.error("Error fetching KYC:", err);
-      setError("Something went wrong while fetching KYC details");
+
+      // Handle 404 separately
+      if (err.response?.status === 404) {
+        setError("No KYC record found for this user.");
+      } else if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else {
+        setError("Something went wrong while fetching KYC details.");
+      }
     } finally {
       setLoading(false);
     }
@@ -33,6 +47,7 @@ const KycVerificationAdmin = ({ userId = "68b1a01074ad0c19f272b438" }) => {
     if (userId) fetchKyc();
   }, [userId]);
 
+  // Update KYC status (verified/rejected)
   const handleUpdateStatus = async (status) => {
     try {
       setUpdating(true);
@@ -57,7 +72,7 @@ const KycVerificationAdmin = ({ userId = "68b1a01074ad0c19f272b438" }) => {
         Swal.fire({
           icon: "error",
           title: "Update Failed",
-          text: "Unable to update KYC status",
+          text: res.data?.message || "Unable to update KYC status",
         });
       }
     } catch (err) {
@@ -65,13 +80,14 @@ const KycVerificationAdmin = ({ userId = "68b1a01074ad0c19f272b438" }) => {
       Swal.fire({
         icon: "error",
         title: "Error",
-        text: "Something went wrong while updating KYC",
+        text: err.response?.data?.message || "Something went wrong while updating KYC",
       });
     } finally {
       setUpdating(false);
     }
   };
 
+  // Preview document
   const handlePreview = (src, label) => {
     Swal.fire({
       title: label,
@@ -86,7 +102,7 @@ const KycVerificationAdmin = ({ userId = "68b1a01074ad0c19f272b438" }) => {
   if (loading) return <p className="text-gray-500">Loading KYC details...</p>;
   if (error) return <p className="text-red-500">{error}</p>;
   if (!kycDetails)
-    return <p className="text-red-500">No KYC details found for this user.</p>;
+    return <p className="text-gray-500">No KYC details to display.</p>;
 
   const documents = [
     { label: "Aadhaar Front", src: kycDetails.aadhaarFrontDoc },
@@ -96,86 +112,84 @@ const KycVerificationAdmin = ({ userId = "68b1a01074ad0c19f272b438" }) => {
   ];
 
   return (
- <div className="overflow-x-auto">
-  <table className="min-w-full divide-y divide-gray-200 border  text-gray-300  rounded shadow">
-    <thead className="bg-gray-50">
-      <tr>
-        <th className="px-4 py-2 text-left text-sm font-medium text-gray-7
-        00">Status</th>
-        <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Remark</th>
-        <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Uploaded</th>
-        <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Documents</th>
-        <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Actions</th>
-      </tr>
-    </thead>
-    <tbody className="bg-white divide-y divide-gray-200">
-      <tr>
-        {/* Status */}
-        <td className="px-4 py-3">
-          <span
-            className={`px-3 py-1 rounded-full font-medium capitalize text-sm ${
-              kycDetails.status === "verified"
-                ? "bg-green-100 text-green-700"
-                : kycDetails.status === "pending"
-                ? "bg-yellow-100 text-yellow-700"
-                : "bg-red-100 text-red-700"
-            }`}
-          >
-            {kycDetails.status}
-          </span>
-        </td>
+    <div className="overflow-x-auto">
+      <table className="min-w-full divide-y divide-gray-200 border text-gray-700 rounded shadow">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="px-4 py-2 text-left text-sm font-medium">Status</th>
+            <th className="px-4 py-2 text-left text-sm font-medium">Remark</th>
+            <th className="px-4 py-2 text-left text-sm font-medium">Uploaded</th>
+            <th className="px-4 py-2 text-left text-sm font-medium">Documents</th>
+            <th className="px-4 py-2 text-left text-sm font-medium">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
+          <tr>
+            {/* Status */}
+            <td className="px-4 py-3">
+              <span
+                className={`px-3 py-1 rounded-full font-medium capitalize text-sm ${
+                  kycDetails.status === "verified"
+                    ? "bg-green-100 text-green-700"
+                    : kycDetails.status === "pending"
+                    ? "bg-yellow-100 text-yellow-700"
+                    : "bg-red-100 text-red-700"
+                }`}
+              >
+                {kycDetails.status}
+              </span>
+            </td>
 
-        {/* Remark */}
-        <td className="px-4 py-3 text-sm">{kycDetails.remark || "No remark"}</td>
+            {/* Remark */}
+            <td className="px-4 py-3 text-sm">{kycDetails.remark || "No remark"}</td>
 
-        {/* Uploaded */}
-        <td className="px-4 py-3 text-sm">
-          {new Date(kycDetails.uploadedDate).toLocaleString()}
-        </td>
+            {/* Uploaded */}
+            <td className="px-4 py-3 text-sm">
+              {new Date(kycDetails.uploadedDate).toLocaleString()}
+            </td>
 
-        {/* Documents */}
-        <td className="px-4 py-3">
-          <div className="flex flex-wrap gap-3">
-            {documents.map(
-              (doc, idx) =>
-                doc.src && (
-                  <div
-                    key={idx}
-                    className="flex flex-col items-center cursor-pointer"
-                    onClick={() => handlePreview(doc.src, doc.label)}
-                  >
-                    <Eye className="w-5 h-5 text-blue-600 hover:scale-110 transition" />
-                    <span className="text-xs mt-1">{doc.label}</span>
-                  </div>
-                )
-            )}
-          </div>
-        </td>
+            {/* Documents */}
+            <td className="px-4 py-3">
+              <div className="flex flex-wrap gap-3">
+                {documents.map(
+                  (doc, idx) =>
+                    doc.src && (
+                      <div
+                        key={idx}
+                        className="flex flex-col items-center cursor-pointer"
+                        onClick={() => handlePreview(doc.src, doc.label)}
+                      >
+                        <Eye className="w-5 h-5 text-blue-600 hover:scale-110 transition" />
+                        <span className="text-xs mt-1">{doc.label}</span>
+                      </div>
+                    )
+                )}
+              </div>
+            </td>
 
-        {/* Actions */}
-        <td className="px-4 py-3 text-sm">
-          <div className="flex gap-2">
-            <button
-              onClick={() => handleUpdateStatus("verified")}
-              disabled={updating}
-              className="flex-1 px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition"
-            >
-              Approve
-            </button>
-            <button
-              onClick={() => handleUpdateStatus("rejected")}
-              disabled={updating}
-              className="flex-1 px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition"
-            >
-              Reject
-            </button>
-          </div>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</div>
-
+            {/* Actions */}
+            <td className="px-4 py-3 text-sm">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleUpdateStatus("verified")}
+                  disabled={updating}
+                  className="flex-1 px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition"
+                >
+                  Approve
+                </button>
+                <button
+                  onClick={() => handleUpdateStatus("rejected")}
+                  disabled={updating}
+                  className="flex-1 px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition"
+                >
+                  Reject
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   );
 };
 
