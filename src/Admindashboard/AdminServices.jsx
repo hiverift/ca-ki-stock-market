@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Eye, Edit, Trash2, Plus } from "lucide-react";
+import { Eye, Edit, Edit2, Trash2, Plus, X } from "lucide-react";
 import config from "../pages/config";
 
 const BASE_URL = config.BASE_URL;
@@ -128,7 +128,7 @@ const AdminService = () => {
               </label>
               <input
                 type="number"
-                min= "1"
+                min="1"
                 value={durationMinutes}
                 onChange={(e) => setDurationMinutes(e.target.value)}
                 placeholder="30"
@@ -143,7 +143,7 @@ const AdminService = () => {
               </label>
               <input
                 type="number"
-                   min= "1"
+                min="1"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 placeholder="999"
@@ -161,65 +161,73 @@ const AdminService = () => {
                 {loading
                   ? "Saving..."
                   : editingService
-                  ? "Update Service"
-                  : "Save Service"}
+                    ? "Update Service"
+                    : "Save Service"}
               </button>
             </div>
           </form>
         </div>
 
-        {/* Services List */}
-        <div className="bg-white p-8 rounded-2xl shadow-lg">
-          <h3 className="text-xl  text-gray-700 mb-6 border-b border-gray-300 pb-3">
+
+        <div className="bg-white rounded-3xl shadow-2xl p-6 mt-6">
+
+          <h3 className="text-xl font-semibold text-gray-700 mb-6 border-b pb-3">
             📋 All Services
           </h3>
+
           {services.length === 0 ? (
             <p className="text-gray-500 text-center py-6">No services added yet.</p>
           ) : (
-            <table className="w-full border-collapse text-sm">
-              <thead>
-                <tr className=" text-gray-700">
-                  <th className="p-3 border border-gray-300">Name</th>
-                  <th className="p-3 border border-gray-300">Duration (mins)</th>
-                  <th className="p-3 border border-gray-300">Price (₹)</th>
-                  <th className="p-3 border border-gray-300">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {services.map((service) => (
-                  <tr
-                    key={service._id}
-                    className="hover:bg-yellow-50 text-center transition"
-                  >
-                    <td className="p-3 border border-gray-300">{service.name}</td>
-                    <td className="p-3 border border-gray-300">{service.durationMinutes}</td>
-                    <td className="p-3 border border-gray-300 ">₹{service.price}</td>
-                    <td className="p-3 border border-gray-300 flex items-center justify-center gap-2">
-                      <button
-                        onClick={() => handleView(service)}
-                        className="p-2 bg-blue-100 rounded hover:bg-blue-200"
-                      >
-                        <Eye size={16} className="text-blue-600" />
-                      </button>
-                      <button
-                        onClick={() => handleEdit(service)}
-                        className="p-2 bg-green-100 rounded hover:bg-green-200"
-                      >
-                        <Edit size={16} className="text-green-600" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(service._id)}
-                        className="p-2 bg-red-100 rounded hover:bg-red-200"
-                      >
-                        <Trash2 size={16} className="text-red-600" />
-                      </button>
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="min-w-full border-collapse">
+                <thead>
+                  <tr className="bg-gray-100 text-gray-600 text-sm">
+                    <th className="px-4 py-3 text-left border-b">Name</th>
+                    <th className="px-4 py-3 text-left border-b">Duration (mins)</th>
+                    <th className="px-4 py-3 text-left border-b">Price (₹)</th>
+                    <th className="px-4 py-3 text-left border-b">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {services.map((service) => (
+                    <tr key={service._id} className="border-b hover:bg-gray-50 text-sm whitespace-nowrap transition">
+                      <td className="px-4 py-3">{service.name}</td>
+                      <td className="px-4 py-3">{service.durationMinutes}</td>
+                      <td className="px-4 py-3">₹{service.price}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex justify-center items-center gap-2">
+                          {/* View Button */}
+                          <button
+                            onClick={() => handleView(service)}
+                            className="flex items-center justify-center w-8 h-8 bg-green-500 hover:bg-green-600 text-white rounded"
+                          >
+                            <Eye size={16} />
+                          </button>
+                          {/* Edit Button */}
+                          <button
+                            onClick={() => handleEdit(service)}
+                            className="flex items-center justify-center w-8 h-8 bg-blue-500 hover:bg-blue-600 text-white rounded"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          {/* Delete Button */}
+                          <button
+                            onClick={() => handleDelete(service._id)}
+                             className="flex items-center justify-center w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
+
+
       </div>
     </div>
   );

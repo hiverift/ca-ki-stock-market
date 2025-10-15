@@ -12,9 +12,12 @@ import {
   PencilSquareIcon,
   Bars3Icon,
   XMarkIcon,
+
   ChevronDownIcon,
 } from "@heroicons/react/24/outline";
 
+import PremiumAppointments from "./PremiumAppointments";
+import PremiumWebinars from "./PremiumWebinars";
 const AdminSideBar = () => {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
@@ -25,12 +28,16 @@ const AdminSideBar = () => {
     { name: "Courses", icon: <BookOpenIcon className="h-5 w-5" />, path: "/admin-dashboard/courses" },
     { name: "Webinars", icon: <PresentationChartLineIcon className="h-5 w-5" />, path: "/admin-dashboard/webinars" },
     { name: "Appointments", icon: <CalendarDaysIcon className="h-5 w-5" />, path: "/admin-dashboard/appointments" },
-     { name: "Services", icon: <CreditCardIcon className="h-5 w-5" />, path: "/admin-dashboard/services" },
+    { name: "Services", icon: <CreditCardIcon className="h-5 w-5" />, path: "/admin-dashboard/services" },
     // { name: "Payments", icon: <CreditCardIcon className="h-5 w-5" />, path: "/admin-dashboard/payments" },
     { name: "order", icon: <UsersIcon className="h-5 w-5" />, path: "/admin-dashboard/Adminorder" },
     { name: "User Management", icon: <UsersIcon className="h-5 w-5" />, path: "/admin-dashboard/user-management" },
-    { name: "KYC", icon: <UsersIcon className="h-5 w-5" />, path: "/admin-dashboard/kyc-verification" }, 
-    
+    { name: "KYC", icon: <UsersIcon className="h-5 w-5" />, path: "/admin-dashboard/kyc-verification" },
+
+    { name: "Premium Webinars", icon: <PresentationChartLineIcon className="h-5 w-5" />, path: "/admin-dashboard/premium-webinars" },
+    { name: "Premium Courses", icon: <BookOpenIcon className="h-5 w-5" />, path: "/admin-dashboard/premium-courses" },
+    { name: "Premium Appointments", icon: <CalendarDaysIcon className="h-5 w-5" />, path: "/admin-dashboard/premium-appointments" },
+
   ];
 
   const handleLogout = () => {
@@ -71,8 +78,7 @@ const AdminSideBar = () => {
                 to={item.path}
                 onClick={() => setIsOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 py-2 px-3 rounded-md transition font-medium ${
-                    isActive ? " text-black" : "text-gray-700 hover:bg-yellow-100"
+                  `flex items-center gap-3 py-2 px-3 rounded-md transition font-medium ${isActive ? " text-black" : "text-gray-700 hover:bg-yellow-100"
                   }`
                 }
               >
@@ -82,7 +88,7 @@ const AdminSideBar = () => {
             ))}
 
             {/* Categories Dropdown */}
-            <div className="relative">
+            {/* <div className="relative">
               <button
                 onClick={() => setCategoryOpen(!categoryOpen)}
                 className="flex items-center justify-between w-full gap-3 py-2 px-3 rounded-md text-gray-700 hover:bg-yellow-100 font-medium transition"
@@ -122,7 +128,7 @@ const AdminSideBar = () => {
                   </NavLink>
                 </div>
               )}
-            </div>
+            </div> */}
           </nav>
         </div>
 

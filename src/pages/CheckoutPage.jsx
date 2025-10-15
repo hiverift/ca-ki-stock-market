@@ -10,7 +10,10 @@ const fallbackThumb = "/fallback-course.png";
 
 function formatINR(v) {
   try {
-    return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(Number(v));
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+    }).format(Number(v));
   } catch {
     return `₹${v}`;
   }
@@ -54,7 +57,7 @@ export default function CheckoutPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(!!accessToken);
   const [loginData, setLoginData] = useState({ email: "", password: "", role: "user" });
   const [address, setAddress] = useState({
-    name: "",
+    firstName: "",
     lastName: "",
     email: "",
     mobile: "",
@@ -75,6 +78,7 @@ export default function CheckoutPage() {
     else document.documentElement.classList.remove("dark");
   }, [dark]);
 
+  // Load Razorpay script
   useEffect(() => {
     const id = "razorpay-checkout-js";
     if (document.getElementById(id)) {
@@ -93,40 +97,53 @@ export default function CheckoutPage() {
     document.body.appendChild(s);
   }, []);
 
+  // Fetch user info if logged in
   useEffect(() => {
-    if (isLoggedIn && accessToken) {
-      (async () => {
+    const fetchUser = async () => {
+      if (isLoggedIn && accessToken) {
         try {
-          const res = await axios.get(`${BASE_URL}/users/${userId}`, {
+          const res = await axios.get(`${config.BASE_URL}/users/${userId}`, {
             headers: { Authorization: `Bearer ${accessToken}` },
           });
-          console.log("User details fetch response:", res);
-          const user = res.result?.user || {};
-          console.log("Fetched user details:", user);
+          const user = res.data?.result?.user || {};
           setAddress({
-            name: user.name || "John",
+            firstName: user.name || "John",
             lastName: user.lastName || "Doe",
-            email: user.email || "example@gmail.com",
-            mobile: user.mobile || "9999999999",
-            fullAddress: user.address || "Delhi, India",
+            email: user.email || "",
+            mobile: user.mobile || "",
+            fullAddress: user.address || "",
           });
-          if (user._id) {
-            localStorage.setItem("userId", user._id);
-            setUserId(user._id);
-          }
+          if (user._id) localStorage.setItem("userId", user._id);
         } catch {
+          // fallback defaults
           setAddress({
-            name: "John",
+            firstName: "John",
             lastName: "Doe",
-            email: "example@gmail.com",
-            mobile: "9999999999",
-            fullAddress: "Delhi, India",
+            email: "",
+            mobile: "",
+            fullAddress: "",
           });
         }
-      })();
-    }
-  }, [isLoggedIn, accessToken]);
+      }
+    };
 
+    fetchUser();
+
+    // Listen to storage changes for instant login update
+    const updateLoginStatus = () => {
+      const token = localStorage.getItem("accessToken");
+      setIsLoggedIn(!!token);
+      if (token) setAccessToken(token);
+      else setAccessToken("");
+    };
+    window.addEventListener("storage", updateLoginStatus);
+
+    return () => window.removeEventListener("storage", updateLoginStatus);
+  }, [isLoggedIn, accessToken, userId]);
+
+  // ------------------------
+  // Login Handler
+  // ------------------------
   const validateLogin = () => {
     const e = {};
     if (!loginData.email || !/^\S+@\S+\.\S+$/.test(loginData.email)) e.email = "Invalid email";
@@ -140,11 +157,9 @@ export default function CheckoutPage() {
 
     try {
       const res = await axios.post(`${config.BASE_URL}auth/login`, loginData);
-       console.log("Login successful, user:", res.data?.result);
       const { accessToken, user } = res.data?.result || {};
-       
+
       if (accessToken) {
-     
         localStorage.setItem("accessToken", accessToken);
         localStorage.setItem("userId", user._id || "");
         localStorage.setItem("user", JSON.stringify(user));
@@ -162,23 +177,26 @@ export default function CheckoutPage() {
         });
 
         setAddress({
-          name: user.name || "John",
+          firstName: user.name || "John",
           lastName: user.lastName || "Doe",
           email: user.email || loginData.email,
-          mobile: user.mobile || "9999999999",
-          fullAddress: user.address || "Delhi, India",
+          mobile: user.mobile || "",
+          fullAddress: user.address || "",
         });
       } else {
         Swal.fire("Error", "Login failed: Invalid response", "error");
       }
     } catch (err) {
-      console.error("Login error:", err?.response?.data || err.message);
       Swal.fire("Error", "Login failed. Please check credentials.", "error");
     }
   };
+
+  // ------------------------
+  // Address Validation
+  // ------------------------
   const validateAddress = () => {
     const e = {};
-    if (!address.name) e.name = "Required";
+    if (!address.firstName) e.firstName = "Required";
     if (!address.lastName) e.lastName = "Required";
     if (!address.email || !/^\S+@\S+\.\S+$/.test(address.email)) e.email = "Invalid email";
     if (!address.mobile || !/^\d{7,15}$/.test(address.mobile)) e.mobile = "Invalid phone";
@@ -187,16 +205,17 @@ export default function CheckoutPage() {
     return Object.keys(e).length === 0;
   };
 
+  // ------------------------
+  // Apply Coupon
+  // ------------------------
   const applyCoupon = async () => {
-    if (!coupon)
+    if (!coupon.trim())
       return Swal.fire("Info", "Please enter a coupon code.", "info");
     try {
       const res = await axios.post(
         `${config.BASE_URL}coupon/apply`,
         { code: coupon },
-        {
-          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
-        }
+        { headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {} }
       );
       setDiscount(res.data.discount || 0);
       Swal.fire("Success", `Coupon applied: ₹${res.data.discount || 0} off`, "success");
@@ -205,6 +224,9 @@ export default function CheckoutPage() {
     }
   };
 
+  // ------------------------
+  // Payment Handler
+  // ------------------------
   const handlePayment = async () => {
     if (!scriptLoaded || typeof window.Razorpay === "undefined") {
       Swal.fire("Error", "Payment gateway not ready", "error");
@@ -242,9 +264,7 @@ export default function CheckoutPage() {
       const payRes = await axios.post(
         `${config.BASE_URL}orders/${ordReceipt}/pay`,
         { amount: ordAmount },
-        {
-          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
-        }
+        { headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {} }
       );
 
       const payData = payRes?.data || {};
@@ -270,7 +290,7 @@ export default function CheckoutPage() {
         prefill: {
           name: `${address.firstName} ${address.lastName}`,
           email: address.email,
-          contact: address.phone,
+          contact: address.mobile,
         },
         handler: async (resp) => {
           try {
@@ -300,7 +320,6 @@ export default function CheckoutPage() {
       const rzp = new window.Razorpay(options);
       rzp.open();
     } catch (err) {
-      console.error("handlePayment error:", err);
       Swal.fire("Error", "Payment failed to start", "error");
       setLoadingPayment(false);
     }
@@ -324,7 +343,7 @@ export default function CheckoutPage() {
 
       <div className="flex flex-col lg:flex-row gap-6">
         {/* LEFT SECTION */}
-        <div className="flex-1 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg space-y-4">
+        <div className="flex-1 bg-white p-6 rounded-2xl shadow-lg space-y-4">
           <h2 className="text-lg font-semibold mb-2">Your Info</h2>
 
           {!isLoggedIn ? (
@@ -337,6 +356,7 @@ export default function CheckoutPage() {
                 onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
               />
               {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
+
               <input
                 type="password"
                 placeholder="Password"
@@ -345,6 +365,7 @@ export default function CheckoutPage() {
                 onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
               />
               {errors.password && <p className="text-red-500 text-sm">{errors.password}</p>}
+
               <button
                 onClick={handleLogin}
                 className="w-full bg-yellow-400 hover:bg-yellow-500 py-2 rounded mt-2 font-semibold transition"
@@ -360,7 +381,7 @@ export default function CheckoutPage() {
                     type="text"
                     placeholder="First Name"
                     className="w-full p-2 rounded border text-sm"
-                    value={address.name}
+                    value={address.firstName}
                     onChange={(e) => setAddress({ ...address, firstName: e.target.value })}
                   />
                   {errors.firstName && <p className="text-red-500 text-sm">{errors.firstName}</p>}
@@ -385,6 +406,7 @@ export default function CheckoutPage() {
                 onChange={(e) => setAddress({ ...address, email: e.target.value })}
               />
               {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
+
               <input
                 type="tel"
                 placeholder="Phone"
@@ -393,6 +415,7 @@ export default function CheckoutPage() {
                 onChange={(e) => setAddress({ ...address, mobile: e.target.value })}
               />
               {errors.mobile && <p className="text-red-500 text-sm">{errors.mobile}</p>}
+
               <textarea
                 placeholder="Full Address"
                 rows={3}
@@ -422,8 +445,7 @@ export default function CheckoutPage() {
         </div>
 
         {/* RIGHT SECTION */}
-        <div className="w-full lg:w-1/3 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg flex flex-col gap-4">
-          <h2 className="text-lg font-semibold mb-2">Order Summary</h2>
+        <div className="w-full lg:w-1/3 bg-white p-6 rounded-2xl shadow-lg flex flex-col gap-4">
           <SafeImg src={preparedItem.thumbnail} alt={preparedItem.title} className="w-full h-44 object-cover rounded-lg" />
           <h3 className="font-bold text-base sm:text-lg">{preparedItem.title}</h3>
           <p className="text-sm">{preparedItem.description}</p>

@@ -78,7 +78,7 @@ function LoginPage() {
       // Store tokens
       localStorage.setItem("accessToken", response.data.result?.accessToken);
       localStorage.setItem("refreshToken", response.data.result?.refreshToken);
-        localStorage.setItem("user", JSON.stringify(response.data.result?.user));
+      localStorage.setItem("user", JSON.stringify(response.data.result?.user));
 
       // Role-based storage
       if (user?.role === "admin") {
