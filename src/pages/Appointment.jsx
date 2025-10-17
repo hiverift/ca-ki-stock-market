@@ -37,6 +37,13 @@ export default function AppointmentPage() {
     setIsAuthenticated(Boolean(token));
   }, []);
 
+  // Automatically show login modal if user reaches Payment step
+  useEffect(() => {
+    if (step === 3 && !isAuthenticated) {
+      openLoginModal(null);
+    }
+  }, [step, isAuthenticated]);
+
   const doLogin = async (form) => {
     if (!form.email || !form.password) {
       setLoginError("Please enter both email and password");
@@ -145,7 +152,6 @@ export default function AppointmentPage() {
             const startUtc = s.start ? moment.utc(s.start) : null;
             const endUtc = s.end ? moment.utc(s.end) : null;
 
-            // Convert to IST
             const startIST = startUtc ? startUtc.tz("Asia/Kolkata").toDate() : null;
             const endIST = endUtc ? endUtc.tz("Asia/Kolkata").toDate() : startIST;
 
@@ -161,7 +167,6 @@ export default function AppointmentPage() {
           })
           .filter((s) => s._startDate && (s.seatsLeft ?? 0) > 0);
 
-        // Unique slots by day & time
         const unique = [];
         const seen = new Set();
         for (const f of processedSlots) {
@@ -179,11 +184,9 @@ export default function AppointmentPage() {
           }
         }
 
-        // Set available dates
         const datesSet = new Set(unique.map((s) => moment(s.start).startOf("day").toISOString()));
         setAvailableDates(Array.from(datesSet));
 
-        // Filter slots for selectedDate
         if (selectedDate) {
           const dayIso = moment(selectedDate).startOf("day").toISOString();
           setSlotsForDate(unique.filter((s) => moment(s.start).startOf("day").toISOString() === dayIso));
@@ -231,7 +234,7 @@ export default function AppointmentPage() {
           serviceId: selectedService?._id ?? selectedService?.id,
           slotId: selectedSlot?.id,
           date: moment(selectedDate).format("YYYY-MM-DD"),
-          userId: "68b1a01074ad0c19f272b438",
+          userId: localStorage.getItem("userId"),
         };
 
         const bookingResult = await createBooking(bookingPayload, token);
@@ -280,30 +283,6 @@ export default function AppointmentPage() {
               {label}
             </div>
           ))}
-
-          {/* {!isAuthenticated ? (
-            <div className="mt-4 p-3 bg-red-50 border border-red-100 rounded text-sm text-red-700">
-              Login required to book.
-              <div className="mt-2 flex gap-2">
-                <button
-                  onClick={() => openLoginModal(null)}
-                  className="px-3 py-1 bg-yellow-400 hover:bg-yellow-500 text-black rounded"
-                >
-                  Login
-                </button>
-                <button
-                  onClick={() => navigate("/register")}
-                  className="px-3 py-1 border rounded"
-                >
-                  Register
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="mt-4 p-3 bg-green-50 border border-green-100 rounded text-sm text-green-700">
-              Logged in as {localStorage.getItem("userName") || "User"} — you can book appointments.
-            </div>
-          )} */}
         </div>
 
         {/* Main Step Content */}
@@ -483,7 +462,7 @@ export default function AppointmentPage() {
       </div>
 
       {/* Login Modal */}
-      {/* {showLoginModal && (
+      {showLoginModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-6">
             <h3 className="text-lg font-semibold mb-2">Login to continue</h3>
@@ -536,10 +515,7 @@ export default function AppointmentPage() {
             </div>
           </div>
         </div>
-      )} */}
+      )}
     </div>
   );
 }
-
-
-

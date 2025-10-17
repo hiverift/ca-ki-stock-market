@@ -12,7 +12,7 @@ function PremiumAppointments() {
     const fetchAppointments = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${config.BASE_URL}orders/admin/paid/courses`);
+        const response = await axios.get(`${config.BASE_URL}orders/admin/paid/appointments`);
 
         if (response.data.result?.items) {
           setAppointments(response.data.result.items);
@@ -57,11 +57,10 @@ function PremiumAppointments() {
               <div className="flex justify-between items-center mb-4">
                 <span className="text-sm font-semibold text-gray-500">Order ID: #{order?.orderId || "N/A"}</span>
                 <span
-                  className={`text-xs font-bold px-3 py-1 rounded-full ${
-                    order?.status === "paid"
+                  className={`text-xs font-bold px-3 py-1 rounded-full ${order?.status === "paid"
                       ? "bg-green-100 text-green-800"
                       : "bg-red-100 text-red-800"
-                  }`}
+                    }`}
                 >
                   {order?.status || "N/A"}
                 </span>

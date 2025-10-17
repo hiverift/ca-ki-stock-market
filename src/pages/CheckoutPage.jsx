@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import Swal from "sweetalert2";
-import { FaCheck } from "react-icons/fa";
+import { FaCheck, FaLock, FaTag } from "react-icons/fa";
 import config from "./config";
 
 const razorpayKey = "rzp_test_RD67KFzwSW83SE";
@@ -52,7 +52,6 @@ export default function CheckoutPage() {
     preparedItem.appointmentId = location.state?.appointmentId || item.id;
   if (location.state?.price) preparedItem.price = location.state?.price || item.price;
 
-  const [dark, setDark] = useState(false);
   const [step, setStep] = useState("details");
   const [isLoggedIn, setIsLoggedIn] = useState(!!accessToken);
   const [loginData, setLoginData] = useState({ email: "", password: "", role: "user" });
@@ -72,11 +71,6 @@ export default function CheckoutPage() {
   const net = Math.max(0, (Number(preparedItem.price) || 0) - (Number(discount) || 0));
   const formattedNet = useMemo(() => formatINR(net), [net]);
   const studentsDisplay = useMemo(() => (preparedItem?.students ?? 0).toLocaleString(), [preparedItem]);
-
-  useEffect(() => {
-    if (dark) document.documentElement.classList.add("dark");
-    else document.documentElement.classList.remove("dark");
-  }, [dark]);
 
   // Load Razorpay script
   useEffect(() => {
@@ -102,10 +96,10 @@ export default function CheckoutPage() {
     const fetchUser = async () => {
       if (isLoggedIn && accessToken) {
         try {
-          const res = await axios.get(`${config.BASE_URL}/users/${userId}`, {
+          const res = await axios.get(`${config.BASE_URL}users/${userId}`, {
             headers: { Authorization: `Bearer ${accessToken}` },
           });
-          const user = res.data?.result?.user || {};
+          const user = res.data?.result || {};
           setAddress({
             firstName: user.name || "John",
             lastName: user.lastName || "Doe",
@@ -115,7 +109,6 @@ export default function CheckoutPage() {
           });
           if (user._id) localStorage.setItem("userId", user._id);
         } catch {
-          // fallback defaults
           setAddress({
             firstName: "John",
             lastName: "Doe",
@@ -141,9 +134,7 @@ export default function CheckoutPage() {
     return () => window.removeEventListener("storage", updateLoginStatus);
   }, [isLoggedIn, accessToken, userId]);
 
-  // ------------------------
   // Login Handler
-  // ------------------------
   const validateLogin = () => {
     const e = {};
     if (!loginData.email || !/^\S+@\S+\.\S+$/.test(loginData.email)) e.email = "Invalid email";
@@ -191,9 +182,7 @@ export default function CheckoutPage() {
     }
   };
 
-  // ------------------------
   // Address Validation
-  // ------------------------
   const validateAddress = () => {
     const e = {};
     if (!address.firstName) e.firstName = "Required";
@@ -205,9 +194,7 @@ export default function CheckoutPage() {
     return Object.keys(e).length === 0;
   };
 
-  // ------------------------
   // Apply Coupon
-  // ------------------------
   const applyCoupon = async () => {
     if (!coupon.trim())
       return Swal.fire("Info", "Please enter a coupon code.", "info");
@@ -224,9 +211,7 @@ export default function CheckoutPage() {
     }
   };
 
-  // ------------------------
   // Payment Handler
-  // ------------------------
   const handlePayment = async () => {
     if (!scriptLoaded || typeof window.Razorpay === "undefined") {
       Swal.fire("Error", "Payment gateway not ready", "error");
@@ -314,7 +299,7 @@ export default function CheckoutPage() {
           }
         },
         modal: { ondismiss: () => setLoadingPayment(false) },
-        theme: { color: "#16a34a" },
+        theme: { color: "#10b981" },
       };
 
       const rzp = new window.Razorpay(options);
@@ -327,154 +312,222 @@ export default function CheckoutPage() {
 
   if (step === "success") {
     return (
-      <div className="flex flex-col items-center justify-center h-screen gap-4 text-center">
-        <FaCheck className="text-6xl text-green-500" />
-        <h2 className="text-2xl font-bold">Payment Successful!</h2>
-        <p>
-          You have successfully enrolled in <strong>{preparedItem.title}</strong>.
-        </p>
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <div className="mb-6 inline-block p-4 bg-green-100 rounded-full">
+            <FaCheck className="text-4xl text-green-600" />
+          </div>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Payment Successful!</h2>
+          <p className="text-gray-600 mb-2">You have successfully enrolled in</p>
+          <p className="text-lg font-semibold text-green-700 mb-6">{preparedItem.title}</p>
+          <button
+            onClick={() => navigate("/user-dashboard")}
+            className="inline-block bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-semibold transition duration-200"
+          >
+            Go to Dashboard
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className={`min-h-screen px-4 py-10 max-w-6xl mx-auto ${dark ? "bg-gray-900 text-white" : "bg-gray-50 text-gray-900"}`}>
-      <h1 className="text-2xl font-bold mb-6">Checkout</h1>
-
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* LEFT SECTION */}
-        <div className="flex-1 bg-white p-6 rounded-2xl shadow-lg space-y-4">
-          <h2 className="text-lg font-semibold mb-2">Your Info</h2>
-
-          {!isLoggedIn ? (
-            <>
-              <input
-                type="email"
-                placeholder="Email"
-                className="w-full p-2 rounded border text-sm"
-                value={loginData.email}
-                onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
-              />
-              {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
-
-              <input
-                type="password"
-                placeholder="Password"
-                className="w-full p-2 rounded border text-sm"
-                value={loginData.password}
-                onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-              />
-              {errors.password && <p className="text-red-500 text-sm">{errors.password}</p>}
-
-              <button
-                onClick={handleLogin}
-                className="w-full bg-yellow-400 hover:bg-yellow-500 py-2 rounded mt-2 font-semibold transition"
-              >
-                Login
-              </button>
-            </>
-          ) : (
-            <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <input
-                    type="text"
-                    placeholder="First Name"
-                    className="w-full p-2 rounded border text-sm"
-                    value={address.firstName}
-                    onChange={(e) => setAddress({ ...address, firstName: e.target.value })}
-                  />
-                  {errors.firstName && <p className="text-red-500 text-sm">{errors.firstName}</p>}
-                </div>
-                <div>
-                  <input
-                    type="text"
-                    placeholder="Last Name"
-                    className="w-full p-2 rounded border text-sm"
-                    value={address.lastName}
-                    onChange={(e) => setAddress({ ...address, lastName: e.target.value })}
-                  />
-                  {errors.lastName && <p className="text-red-500 text-sm">{errors.lastName}</p>}
-                </div>
-              </div>
-
-              <input
-                type="email"
-                placeholder="Email"
-                className="w-full p-2 rounded border text-sm"
-                value={address.email}
-                onChange={(e) => setAddress({ ...address, email: e.target.value })}
-              />
-              {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
-
-              <input
-                type="tel"
-                placeholder="Phone"
-                className="w-full p-2 rounded border text-sm"
-                value={address.mobile}
-                onChange={(e) => setAddress({ ...address, mobile: e.target.value })}
-              />
-              {errors.mobile && <p className="text-red-500 text-sm">{errors.mobile}</p>}
-
-              <textarea
-                placeholder="Full Address"
-                rows={3}
-                className="w-full p-2 rounded border text-sm"
-                value={address.fullAddress}
-                onChange={(e) => setAddress({ ...address, fullAddress: e.target.value })}
-              />
-              {errors.fullAddress && <p className="text-red-500 text-sm">{errors.fullAddress}</p>}
-            </>
-          )}
-
-          <div className="flex flex-col sm:flex-row gap-2 mt-3">
-            <input
-              type="text"
-              placeholder="Coupon code"
-              className="flex-1 p-2 rounded border text-sm"
-              value={coupon}
-              onChange={(e) => setCoupon(e.target.value)}
-            />
-            <button
-              onClick={applyCoupon}
-              className="bg-yellow-400 hover:bg-yellow-500 px-4 py-2 rounded font-semibold transition"
-            >
-              Apply
-            </button>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-10 px-4">
+      <div className="max-w-6xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Checkout</h1>
+          <p className="text-gray-600">Complete your enrollment securely</p>
         </div>
 
-        {/* RIGHT SECTION */}
-        <div className="w-full lg:w-1/3 bg-white p-6 rounded-2xl shadow-lg flex flex-col gap-4">
-          <SafeImg src={preparedItem.thumbnail} alt={preparedItem.title} className="w-full h-44 object-cover rounded-lg" />
-          <h3 className="font-bold text-base sm:text-lg">{preparedItem.title}</h3>
-          <p className="text-sm">{preparedItem.description}</p>
-          <p className="text-sm">Students Enrolled: {studentsDisplay}</p>
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* LEFT SECTION - FORM */}
+          <div className="flex-1">
+            <div className="bg-white rounded-2xl shadow-md p-8 space-y-6">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Your Information</h2>
 
-          <div className="flex justify-between text-sm">
-            <span>Price:</span>
-            <span>₹{preparedItem.price}</span>
-          </div>
+                {!isLoggedIn ? (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                      <input
+                        type="email"
+                        placeholder="Enter your email"
+                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
+                        value={loginData.email}
+                        onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
+                      />
+                      {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+                    </div>
 
-          {discount > 0 && (
-            <div className="flex justify-between text-sm text-green-600">
-              <span>Discount:</span>
-              <span>- ₹{discount}</span>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                      <input
+                        type="password"
+                        placeholder="Enter your password"
+                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
+                        value={loginData.password}
+                        onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                      />
+                      {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
+                    </div>
+
+                    <button
+                      onClick={handleLogin}
+                      className="w-full bg-green-600 hover:bg-green-700 active:scale-95 text-white font-semibold py-3 rounded-lg transition duration-200 mt-4"
+                    >
+                      Sign In
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                        <input
+                          type="text"
+                          placeholder="First name"
+                          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
+                          value={address.firstName}
+                          onChange={(e) => setAddress({ ...address, firstName: e.target.value })}
+                        />
+                        {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                        <input
+                          type="text"
+                          placeholder="Last name"
+                          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
+                          value={address.lastName}
+                          onChange={(e) => setAddress({ ...address, lastName: e.target.value })}
+                        />
+                        {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                      <input
+                        type="email"
+                        placeholder="your@email.com"
+                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
+                        value={address.email}
+                        onChange={(e) => setAddress({ ...address, email: e.target.value })}
+                      />
+                      {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                      <input
+                        type="tel"
+                        placeholder="+91 98765 43210"
+                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
+                        value={address.mobile}
+                        onChange={(e) => setAddress({ ...address, mobile: e.target.value })}
+                      />
+                      {errors.mobile && <p className="text-red-500 text-sm mt-1">{errors.mobile}</p>}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Delivery Address</label>
+                      <textarea
+                        placeholder="Enter your full address"
+                        rows={3}
+                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition resize-none"
+                        value={address.fullAddress}
+                        onChange={(e) => setAddress({ ...address, fullAddress: e.target.value })}
+                      />
+                      {errors.fullAddress && <p className="text-red-500 text-sm mt-1">{errors.fullAddress}</p>}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {isLoggedIn && (
+                <div className="border-t pt-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-3">Have a coupon?</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Enter coupon code"
+                      className="flex-1 px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
+                      value={coupon}
+                      onChange={(e) => setCoupon(e.target.value)}
+                    />
+                    <button
+                      onClick={applyCoupon}
+                      className="bg-green-600 hover:bg-green-700 active:scale-95 text-white px-6 py-3 rounded-lg font-semibold transition duration-200 flex items-center gap-2"
+                    >
+                      <FaTag className="text-sm" /> Apply
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-
-          <div className="flex justify-between font-semibold text-base border-t pt-2">
-            <span>Total:</span>
-            <span>{formattedNet}</span>
           </div>
 
-          <button
-            onClick={handlePayment}
-            className={`w-full bg-green-500 hover:bg-green-600 py-2 rounded font-bold transition ${loadingPayment ? "opacity-50 cursor-not-allowed" : ""}`}
-            disabled={loadingPayment}
-          >
-            {loadingPayment ? "Processing..." : "Pay Now"}
-          </button>
+          {/* RIGHT SECTION - ORDER SUMMARY */}
+          <div className="w-full lg:w-96">
+            <div className="bg-white rounded-2xl shadow-md p-8 sticky top-10 space-y-6">
+              <div>
+                <SafeImg
+                  src={preparedItem.thumbnail}
+                  alt={preparedItem.title}
+                  className="w-full h-48 object-cover rounded-xl"
+                />
+              </div>
+
+              <div>
+                <h3 className="font-bold text-xl text-gray-900 mb-2">{preparedItem.title}</h3>
+                <p className="text-gray-600 text-sm">{preparedItem.description}</p>
+              </div>
+
+              <div className="flex items-center justify-between text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+                <span>👥 Students Enrolled</span>
+                <span className="font-semibold text-gray-900">{studentsDisplay}</span>
+              </div>
+
+              <div className="space-y-3 border-t border-b py-4">
+                <div className="flex justify-between text-gray-600">
+                  <span>Price</span>
+                  <span className="font-semibold">₹{preparedItem.price}</span>
+                </div>
+
+                {discount > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span className="flex items-center gap-1">
+                      <FaTag className="text-xs" /> Discount
+                    </span>
+                    <span className="font-semibold">- ₹{discount}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-between items-center text-2xl font-bold text-gray-900">
+                <span>Total</span>
+                <span className="text-green-600">{formattedNet}</span>
+              </div>
+
+              <button
+                onClick={handlePayment}
+                className={`w-full py-4 rounded-lg font-bold text-white transition duration-200 flex items-center justify-center gap-2 ${
+                  loadingPayment
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-green-600 hover:bg-green-700 active:scale-95"
+                }`}
+                disabled={loadingPayment}
+              >
+                <FaLock className="text-sm" />
+                {loadingPayment ? "Processing..." : "Pay Now"}
+              </button>
+
+              <p className="text-xs text-gray-500 text-center">
+                💳 Secure payment powered by Razorpay
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

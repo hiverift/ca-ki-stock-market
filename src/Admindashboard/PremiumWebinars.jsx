@@ -11,7 +11,7 @@ function PremiumWebinars() {
     const fetchWebinars = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${config.BASE_URL}orders/admin/paid/courses`);
+        const response = await axios.get(`${config.BASE_URL}orders/admin/paid/webinars`);
 
         if (response.data.result?.items) {
           console.log("Webinars data:", response.data.result.items);
@@ -57,6 +57,7 @@ function PremiumWebinars() {
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
         {webinars.map((webinarData, index) => {
+          console.log('websinar ', webinarData)
           const order = webinarData.order || {};
           const user = webinarData.user?.result || {};
           const item = webinarData.item?.result || {};
@@ -81,6 +82,7 @@ function PremiumWebinars() {
                 {item.title || "Untitled Webinar"}
               </h2>
 
+
               <div className="text-sm text-gray-600 space-y-3">
                 {/* Webinar Details (always visible) */}
                 <div className="bg-yellow-50 rounded-lg p-3">
@@ -91,6 +93,23 @@ function PremiumWebinars() {
                     <span className="font-semibold">Date:</span>{" "}
                     {formatDate(item.date)}
                   </p>
+                  <div className="flex items-center space-x-2">
+                    <a
+                      href={item.googleMeetLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 underline break-all"
+                    >
+                      {item.googleMeetLink || "No link"}
+                    </a>
+                    <button
+                      onClick={() => navigator.clipboard.writeText(item.googleMeetLink)}
+                      className="text-sm text-gray-500 hover:text-gray-800"
+                    >
+                      Copy
+                    </button>
+                  </div>
+
                   <p>
                     <span className="font-semibold">Mode:</span>{" "}
                     {item.mode || "N/A"}
@@ -118,11 +137,10 @@ function PremiumWebinars() {
                   <p>
                     <span className="font-semibold">Status:</span>{" "}
                     <span
-                      className={`${
-                        order.status === "paid"
-                          ? "text-green-600 font-semibold"
-                          : "text-red-500"
-                      }`}
+                      className={`${order.status === "paid"
+                        ? "text-green-600 font-semibold"
+                        : "text-red-500"
+                        }`}
                     >
                       {order.status || "N/A"}
                     </span>
@@ -136,14 +154,10 @@ function PremiumWebinars() {
                   <p>{user.email || "No email"}</p>
                   <p>{user.mobile || "No mobile"}</p>
                 </div>
+
+
               </div>
 
-              {/* Footer (optional) */}
-              <div className="mt-4 flex justify-end">
-                <button className="text-sm bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition">
-                  View Details
-                </button>
-              </div>
             </div>
           );
         })}

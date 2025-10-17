@@ -79,16 +79,16 @@ const ProfileKYC = () => {
 
   // state to track uploaded files and their previews
   const [uploadedFiles, setUploadedFiles] = useState({
-    aadhar_front: null,
+    aadhaarFront: null,
     aadhar_back: null,
-    pan_front: null,
-    pan_back: null,
+    panFront: null,
+    panBack: null,
   });
   const [filePreviews, setFilePreviews] = useState({
-    aadhar_front: null,
+    aadhaarFront: null,
     aadhar_back: null,
-    pan_front: null,
-    pan_back: null,
+    panFront: null,
+    panBack: null,
   });
 
   const [loading, setLoading] = useState(false);
@@ -121,10 +121,10 @@ const ProfileKYC = () => {
   // Upload handler: sends multipart/form-data to backend with userId
   const handleFileUpload = async () => {
     if (
-      !uploadedFiles.aadhar_front ||
+      !uploadedFiles.aadhaarFront ||
       !uploadedFiles.aadhar_back ||
-      !uploadedFiles.pan_front ||
-      !uploadedFiles.pan_back
+      !uploadedFiles.panFront ||
+      !uploadedFiles.panBack
     ) {
       Swal.fire(
         "Missing Documents",
@@ -136,10 +136,10 @@ const ProfileKYC = () => {
 
     const formData = new FormData();
     // Use field names expected by the backend (update these based on API documentation)
-    formData.append("aadhaar_front", uploadedFiles.aadhar_front);
-    formData.append("aadhaar_back", uploadedFiles.aadhar_back);
-    formData.append("pan_front", uploadedFiles.pan_front);
-    formData.append("pan_back", uploadedFiles.pan_back);
+    formData.append("aadhaarFront", uploadedFiles.aadhaarFront);
+    formData.append("aadhaarBack", uploadedFiles.aadhar_back);
+    formData.append("panFront", uploadedFiles.panFront);
+    formData.append("panBack", uploadedFiles.panBack);
     formData.append("userId", userId);
 
     // Log FormData entries for debugging
@@ -228,7 +228,7 @@ const ProfileKYC = () => {
   // onChange handlers for hidden inputs
   const onAadharFrontChange = (e) => {
     const file = e.target.files?.[0];
-    if (file) handleFileChange("aadhar_front", file);
+    if (file) handleFileChange("aadhaarFront", file);
   };
   const onAadharBackChange = (e) => {
     const file = e.target.files?.[0];
@@ -236,11 +236,11 @@ const ProfileKYC = () => {
   };
   const onPanFrontChange = (e) => {
     const file = e.target.files?.[0];
-    if (file) handleFileChange("pan_front", file);
+    if (file) handleFileChange("panFront", file);
   };
   const onPanBackChange = (e) => {
     const file = e.target.files?.[0];
-    if (file) handleFileChange("pan_back", file);
+    if (file) handleFileChange("panBack", file);
   };
 
   // Handler for Edit Profile
@@ -658,7 +658,7 @@ const ProfileKYC = () => {
             </div>
           </div>
           <span className="mt-2 sm:mt-0 inline-flex px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700">
-            {uploadedFiles.aadhar_front ? "Uploaded" : "Pending"}
+            {uploadedFiles.aadhaarFront ? "Uploaded" : "Pending"}
           </span>
         </div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white border border-gray-200 rounded-lg p-4 shadow-sm mb-3">
@@ -682,7 +682,7 @@ const ProfileKYC = () => {
             </div>
           </div>
           <span className="mt-2 sm:mt-0 inline-flex px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700">
-            {uploadedFiles.pan_front ? "Uploaded" : "Pending"}
+            {uploadedFiles.panFront ? "Uploaded" : "Pending"}
           </span>
         </div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
@@ -694,7 +694,7 @@ const ProfileKYC = () => {
             </div>
           </div>
           <span className="mt-2 sm:mt-0 inline-flex px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700">
-            {uploadedFiles.pan_back ? "Uploaded" : "Pending"}
+            {uploadedFiles.panBack ? "Uploaded" : "Pending"}
           </span>
         </div>
       </div>
@@ -702,10 +702,10 @@ const ProfileKYC = () => {
         <h1 className="text-lg text-gray-900 mb-4">Upload and View Documents</h1>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {[
-            { key: "aadhar_front", label: "Aadhaar Card (Front)", ref: aadharFrontInputRef, onChange: onAadharFrontChange },
+            { key: "aadhaarFront", label: "Aadhaar Card (Front)", ref: aadharFrontInputRef, onChange: onAadharFrontChange },
             { key: "aadhar_back", label: "Aadhaar Card (Back)", ref: aadharBackInputRef, onChange: onAadharBackChange },
-            { key: "pan_front", label: "PAN Card (Front)", ref: panFrontInputRef, onChange: onPanFrontChange },
-            { key: "pan_back", label: "PAN Card (Back)", ref: panBackInputRef, onChange: onPanBackChange },
+            { key: "panFront", label: "PAN Card (Front)", ref: panFrontInputRef, onChange: onPanFrontChange },
+            { key: "panBack", label: "PAN Card (Back)", ref: panBackInputRef, onChange: onPanBackChange },
           ].map(({ key, label, ref, onChange }) => (
             <div
               key={key}

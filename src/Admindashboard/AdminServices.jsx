@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Eye, Edit, Edit2, Trash2, Plus, X } from "lucide-react";
 import config from "../pages/config";
-
+import Swal from "sweetalert2";
 const BASE_URL = config.BASE_URL;
 
 const AdminService = () => {
@@ -66,16 +66,29 @@ const AdminService = () => {
   };
 
   // 🔹 Delete Service
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this service?")) return;
+const handleDelete = async (id) => {
+  const result = await Swal.fire({
+    title: "Are you sure?",
+    text: "You won't be able to revert this!",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Yes, delete it!",
+    cancelButtonText: "Cancel",
+    confirmButtonColor: "#3085d6",
+    cancelButtonColor: "#d33",
+  });
+
+  if (result.isConfirmed) {
     try {
       await axios.delete(`${BASE_URL}/services/${id}`);
-      alert("🗑️ Service deleted successfully!");
+      await Swal.fire("Deleted!", "Service deleted successfully.", "success");
       fetchServices();
     } catch (err) {
       console.error("Error deleting service:", err);
+      Swal.fire("Error", "Failed to delete service.", "error");
     }
-  };
+  }
+};
 
   // 🔹 Edit Service
   const handleEdit = (service) => {
@@ -156,7 +169,7 @@ const AdminService = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="px-8 py-3 bg-yellow-500 text-white font-semibold rounded-xl shadow-md hover:bg-yellow-600 transition transform hover:scale-105 disabled:opacity-50"
+                className="px-8 py-3 bg-blue-600 text-white font-semibold rounded-xl shadow-md hover:bg-yellow-600 transition transform hover:scale-105 disabled:opacity-50"
               >
                 {loading
                   ? "Saving..."
@@ -213,7 +226,7 @@ const AdminService = () => {
                           {/* Delete Button */}
                           <button
                             onClick={() => handleDelete(service._id)}
-                             className="flex items-center justify-center w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded"
+                            className="flex items-center justify-center w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded"
                           >
                             <Trash2 size={16} />
                           </button>

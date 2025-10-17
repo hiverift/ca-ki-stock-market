@@ -1,14 +1,12 @@
 import React, { useState } from "react";
-import { FaUser, FaEnvelope, FaPhoneAlt, FaLock,FaEye, FaEyeSlash } from "react-icons/fa";
-
-
+import { FaUser, FaEnvelope, FaPhoneAlt, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import Swal from "sweetalert2";
 import axios from "axios";
-import { useNavigate } from "react-router-dom"; // Import useNavigate
-import config from "./config"; // ✅ works in Vite
+import { useNavigate } from "react-router-dom";
+import config from "./config";
 
 const SignUp = () => {
-  const navigate = useNavigate(); // Initialize navigate
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -16,12 +14,11 @@ const SignUp = () => {
     password: "",
     confirmPassword: "",
   });
-
   const [agreed, setAgreed] = useState(false);
+  const [kycNow, setKycNow] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -33,6 +30,11 @@ const [showConfirmPassword, setShowConfirmPassword] = useState(false);
       return;
     }
 
+    if (!formData.name || !formData.email || !formData.mobile || !formData.password || !formData.confirmPassword) {
+      Swal.fire("Error", "Please fill all required fields", "error");
+      return;
+    }
+
     if (formData.password !== formData.confirmPassword) {
       Swal.fire("Error", "Passwords do not match", "error");
       return;
@@ -41,34 +43,43 @@ const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     setLoading(true);
 
     try {
-      const response = await axios({
-        method: "POST",
-        url:`${config.BASE_URL}auth/register`,
-        headers: { "Content-Type": "application/json" },
-        data: {
+      const response = await axios.post(
+        `${config.BASE_URL}auth/register`,
+        {
           name: formData.name,
           email: formData.email,
           mobile: formData.mobile,
           password: formData.password,
           role: "user",
+          kycNow, // optional field if backend supports
         },
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+
+      // ✅ Check backend JSON statusCode
+      if (response.data.statusCode === 403) {
+        Swal.fire("Error", "Email or mobile number already exists", "error");
+        return;
+      }
+
+      // Success if no errors
+      Swal.fire("Success", "Account created successfully!", "success").then(() => {
+        setFormData({
+          name: "",
+          email: "",
+          mobile: "",
+          password: "",
+          confirmPassword: "",
+        });
+        setAgreed(false);
+        setKycNow(false);
+        navigate("/login");
       });
-
-      Swal.fire("Success", "Account created successfully!", "success");
-
-      // Clear form
-      setFormData({
-        name: "",
-        email: "",
-        mobile: "",
-        password: "",
-        confirmPassword: "",
-      });
-      setAgreed(false);
-
-      // Redirect to login page
-      navigate("/login"); // Change "/login" to your login route
     } catch (error) {
+      console.log("Error caught:", error.response);
+
       if (error.response) {
         Swal.fire("Error", error.response.data.message || "Something went wrong!", "error");
       } else if (error.request) {
@@ -85,10 +96,24 @@ const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     { label: "Full Name", icon: <FaUser />, type: "text", name: "name", placeholder: "Enter your full name" },
     { label: "Email Address", icon: <FaEnvelope />, type: "email", name: "email", placeholder: "Enter your email address" },
     { label: "Mobile Number", icon: <FaPhoneAlt />, type: "tel", name: "mobile", placeholder: "Enter your mobile number" },
-    // { label: "Password", icon: <FaLock />, type: "password", name: "password", placeholder: "Create a strong password" },
-    // { label: "Confirm Password", icon: <FaLock />, type: "password", name: "confirmPassword", placeholder: "Confirm your password" },
-     { label: "Password", icon: <FaLock />, type: showPassword ? "text" : "password", name: "password", placeholder: "Create a strong password", toggleShow: () => setShowPassword(!showPassword), showState: showPassword },
-  { label: "Confirm Password", icon: <FaLock />, type: showConfirmPassword ? "text" : "password", name: "confirmPassword", placeholder: "Confirm your password", toggleShow: () => setShowConfirmPassword(!showConfirmPassword), showState: showConfirmPassword },
+    {
+      label: "Password",
+      icon: <FaLock />,
+      type: showPassword ? "text" : "password",
+      name: "password",
+      placeholder: "Create a strong password",
+      toggleShow: () => setShowPassword(!showPassword),
+      showState: showPassword,
+    },
+    {
+      label: "Confirm Password",
+      icon: <FaLock />,
+      type: showConfirmPassword ? "text" : "password",
+      name: "confirmPassword",
+      placeholder: "Confirm your password",
+      toggleShow: () => setShowConfirmPassword(!showConfirmPassword),
+      showState: showConfirmPassword,
+    },
   ];
 
   return (
@@ -104,31 +129,37 @@ const [showConfirmPassword, setShowConfirmPassword] = useState(false);
             <label className="block text-sm font-semibold text-gray-800 mb-1">{field.label}</label>
             <div className="flex items-center border border-gray-300 rounded-md px-3 py-2 bg-white focus-within:ring-2 focus-within:ring-blue-500">
               <span className="text-gray-500 mr-2">{field.icon}</span>
-    <div className="relative w-full">
-  <input
-    type={field.type}
-    name={field.name}
-    placeholder={field.placeholder}
-    value={formData[field.name]}
-    onChange={handleChange}
-    className="w-full bg-transparent outline-none text-sm text-gray-700 pr-8"
-  />
-  {field.name === "password" || field.name === "confirmPassword" ? (
-    <span
-      onClick={field.toggleShow}
-      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer"
-    >
-      {field.showState ? <FaEyeSlash /> : <FaEye />}
-    </span>
-  ) : null}
-</div>
-
+              <div className="relative w-full">
+                <input
+                  type={field.type}
+                  name={field.name}
+                  placeholder={field.placeholder}
+                  value={formData[field.name]}
+                  onChange={handleChange}
+                  className="w-full bg-transparent outline-none text-sm text-gray-700 pr-8"
+                  autoComplete={field.name}
+                />
+                {(field.name === "password" || field.name === "confirmPassword") && (
+                  <span
+                    onClick={field.toggleShow}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer"
+                  >
+                    {field.showState ? <FaEyeSlash /> : <FaEye />}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         ))}
 
         <div className="mb-4 flex items-start">
-          <input type="checkbox" id="kyc" className="mt-1 mr-2 accent-yellow-500" />
+          <input
+            type="checkbox"
+            id="kyc"
+            className="mt-1 mr-2 accent-yellow-500"
+            checked={kycNow}
+            onChange={() => setKycNow(!kycNow)}
+          />
           <label htmlFor="kyc" className="text-sm text-gray-700">
             I want to complete KYC now <span className="text-gray-500">(Optional - can be done later)</span>
           </label>

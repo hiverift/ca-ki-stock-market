@@ -32,7 +32,7 @@ function Hero() {
                 📘 Explore Courses
               </button>
               <button
-                onClick={() => navigate("/consultancy")} // ✅ Consultancy route
+                onClick={() => navigate("/appointment")} // ✅ Consultancy route
                 className="bg-white border hover:bg-yellow-500 border-gray-300 text-gray-800 px-5 py-2 rounded-lg shadow transition"
               >
                 📝 Book Consultancy

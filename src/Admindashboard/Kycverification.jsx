@@ -6,7 +6,7 @@ import { Eye } from "lucide-react";
 import Swal from "sweetalert2";
 import "sweetalert2/dist/sweetalert2.min.css";
 
-const KycVerificationAdmin = ({ userId = "68b1a01074ad0c19f272b438" }) => {
+const KycVerificationAdmin = ({ userId = "68ec95c27f98ff5a8ffc26ae" }) => {
   const [kycDetails, setKycDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -128,13 +128,12 @@ const KycVerificationAdmin = ({ userId = "68b1a01074ad0c19f272b438" }) => {
             {/* Status */}
             <td className="px-4 py-3">
               <span
-                className={`px-3 py-1 rounded-full font-medium capitalize text-sm ${
-                  kycDetails.status === "verified"
+                className={`px-3 py-1 rounded-full font-medium capitalize text-sm ${kycDetails.status === "verified"
                     ? "bg-green-100 text-green-700"
                     : kycDetails.status === "pending"
-                    ? "bg-yellow-100 text-yellow-700"
-                    : "bg-red-100 text-red-700"
-                }`}
+                      ? "bg-yellow-100 text-yellow-700"
+                      : "bg-red-100 text-red-700"
+                  }`}
               >
                 {kycDetails.status}
               </span>

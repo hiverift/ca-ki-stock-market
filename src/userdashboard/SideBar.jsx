@@ -1,4 +1,4 @@
-import React from "react";
+import React , { useEffect,useState} from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   HomeIcon,
@@ -18,11 +18,28 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
   { name: "My Courses", icon: <BookOpenIcon className="h-5 w-5" />, path: "/user-dashboard/my-courses" },
   { name: "My Appointment", icon: <ChatBubbleBottomCenterIcon className="h-5 w-5" />, path: "/user-dashboard/my-consultations" },
   { name: "My Webinars", icon: <PresentationChartLineIcon className="h-5 w-5" />, path: "/user-dashboard/my-webinars" },
+  { name: "KYC Submit", icon: <PresentationChartLineIcon className="h-5 w-5" />, path: "/user-dashboard/profile-kyc" },
 ];
-
-
+const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false); 
+ useEffect(() => {
+    const token = localStorage.getItem("accessToken");
+    const adminToken = localStorage.getItem("admin"); // admin case
+      
+    setIsLoggedIn(!!token); // only true for normal user login
+    setIsAdmin(!!adminToken); // true only for admin login
+  }, []);
   const handleLogout = () => {
-    localStorage.clear();
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("user");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("admin");
+    localStorage.removeItem("admin");
+    localStorage.removeItem("adminId");
+
+    setIsLoggedIn(false);
+    setIsAdmin(false);
     navigate("/login");
   };
 
@@ -78,7 +95,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
             className="flex items-center gap-3 py-2 px-3 rounded-md hover:bg-red-100 transition text-red-600 font-medium"
           >
             <ArrowRightOnRectangleIcon className="h-5 w-5" />
-            <span>Logout</span>
+            <span>logout </span>
           </button>
         </div>
       </div>
