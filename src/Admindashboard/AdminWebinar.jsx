@@ -3,7 +3,7 @@ import { Plus, Eye, Edit, Trash2, X } from "lucide-react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import config from "../pages/config";
-
+import Swal from "sweetalert2";
 const AdminWebinarTable = () => {
   const [webinars, setWebinars] = useState([]);
   const [showForm, setShowForm] = useState(false);
@@ -16,6 +16,7 @@ const AdminWebinarTable = () => {
     title: "",
     presenter: "",
     description: "",
+    googleMeetLink: "",
     startDate: new Date(),
     durationMinutes: 0,
     price: 0,
@@ -91,12 +92,15 @@ const AdminWebinarTable = () => {
   }, [newWebinar.categoryId]);
 
   // Validation & Save
+
+
   const handleSaveWebinar = async () => {
+    // ----------------- Validation -----------------
     const newErrors = {};
     if (!newWebinar.title) newErrors.title = "Title is required";
+    if (!newWebinar.googleMeetLink) newErrors.googleMeetLink = "googleMeetLink is required";
     if (!newWebinar.presenter) newErrors.presenter = "Presenter is required";
-    if (!newWebinar.youtubeVideoId)
-      newErrors.youtubeVideoId = "YouTube Video ID is required";
+    if (!newWebinar.youtubeVideoId) newErrors.youtubeVideoId = "YouTube Video ID is required";
     if (!newWebinar.startDate) newErrors.startDate = "Start Date is required";
     if (!newWebinar.durationMinutes || newWebinar.durationMinutes <= 0)
       newErrors.durationMinutes = "Duration must be greater than 0";
@@ -109,14 +113,16 @@ const AdminWebinarTable = () => {
       setErrors(newErrors);
       return;
     }
-    setErrors({}); // clear errors
+    setErrors({}); // clear previous errors
 
     try {
+      // ----------------- Prepare URL & Method -----------------
       const url = editId
         ? `${config.BASE_URL}webinars/${editId}`
         : `${config.BASE_URL}webinars`;
       const method = editId ? "PUT" : "POST";
 
+      // ----------------- Prepare FormData -----------------
       const form = new FormData();
       form.append("itemType", "webinar");
       form.append("title", newWebinar.title);
@@ -128,22 +134,31 @@ const AdminWebinarTable = () => {
       form.append("status", newWebinar.status);
       form.append("agenda", JSON.stringify(newWebinar.agenda));
       form.append("youtubeVideoId", newWebinar.youtubeVideoId);
+      form.append("googleMeetLink", newWebinar.googleMeetLink);
       if (newWebinar.categoryId) form.append("categoryId", newWebinar.categoryId);
-      if (newWebinar.subCategoryId)
-        form.append("subCategoryId", newWebinar.subCategoryId);
+      if (newWebinar.subCategoryId) form.append("subCategoryId", newWebinar.subCategoryId);
 
       const accessToken = localStorage.getItem("accessToken");
-      if (!accessToken) return alert("No access token found.");
+      if (!accessToken) {
+        return Swal.fire("Error", "No access token found.", "error");
+      }
 
+      // ----------------- Make API Request -----------------
       const res = await fetch(url, {
         method,
         headers: { Authorization: `Bearer ${accessToken}` },
         body: form,
       });
       const data = await res.json();
-      if (!res.ok) return alert(data.message || "Error saving webinar");
 
+      if (!res.ok) {
+        return Swal.fire("Error", data.message || "Error saving webinar", "error");
+      }
+
+      // ----------------- Refresh Webinar List -----------------
       await fetchWebinars();
+
+      // ----------------- Reset Form -----------------
       setNewWebinar({
         title: "",
         presenter: "",
@@ -155,22 +170,33 @@ const AdminWebinarTable = () => {
         agenda: [],
         newAgenda: "",
         youtubeVideoId: "",
+        googleMeetLink: "",
         categoryId: "",
         subCategoryId: "",
       });
       setEditId(null);
       setShowForm(false);
+
+      // ----------------- Success Alert -----------------
+      Swal.fire({
+        title: editId ? "Updated!" : "Saved!",
+        text: editId ? "Webinar has been updated successfully." : "Webinar has been saved successfully.",
+        icon: "success",
+        confirmButtonText: "OK",
+      });
     } catch (err) {
       console.error(err);
-      alert("Something went wrong!");
+      Swal.fire("Error", "Something went wrong!", "error");
     }
   };
+
 
   const handleEditWebinar = (webinar) => {
     setNewWebinar({
       title: webinar.title || "",
       presenter: webinar.presenter || "",
       description: webinar.description || "",
+      googleMeetLink: webinar.googleMeetLink || "",
       startDate: new Date(webinar.startDate) || new Date(),
       durationMinutes: webinar.durationMinutes || 0,
       price: webinar.price || 0,
@@ -187,21 +213,49 @@ const AdminWebinarTable = () => {
   };
 
   const handleDeleteWebinar = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this webinar?")) return;
-    try {
-      const accessToken = localStorage.getItem("accessToken");
-      if (!accessToken) return alert("No access token found.");
-      const res = await fetch(`${config.BASE_URL}webinars/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-      if (!res.ok) throw new Error("Failed to delete");
-      await fetchWebinars();
-    } catch (err) {
-      console.error(err);
-      alert("Error deleting webinar");
+    // ----------------- Confirmation Alert -----------------
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const accessToken = localStorage.getItem("accessToken");
+        if (!accessToken) return Swal.fire("Error", "No access token found.", "error");
+
+        const res = await fetch(`${config.BASE_URL}webinars/${id}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.message || "Failed to delete webinar");
+        }
+
+        // Refresh the webinar list
+        await fetchWebinars();
+
+        // ----------------- Success Alert -----------------
+        Swal.fire({
+          title: "Deleted!",
+          text: "Webinar has been deleted.",
+          icon: "success",
+          confirmButtonText: "OK",
+        });
+      } catch (err) {
+        console.error(err);
+        Swal.fire("Error", err.message || "Something went wrong!", "error");
+      }
     }
   };
+
 
   const addAgenda = () => {
     if (newWebinar.newAgenda.trim() !== "") {
@@ -227,7 +281,8 @@ const AdminWebinarTable = () => {
         <h2 className="text-2xl sm:text-3xl font-semibold text-gray-700">Manage Webinars</h2>
         <button
           onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-yellow-500 text-white rounded-xl shadow hover:bg-yellow-600 transition"
+          className="px-4 py-2 bg-blue-600 text-white rounded-xl flex items-center gap-2"
+
         >
           <Plus size={18} /> Add Webinar
         </button>
@@ -261,10 +316,10 @@ const AdminWebinarTable = () => {
                   <td className="px-4 py-3">
                     <span
                       className={`px-2 py-1 rounded-full text-xs ${w.status === "Live"
-                          ? "bg-green-500 text-white"
-                          : w.status === "Upcoming"
-                            ? "bg-blue-500 text-white"
-                            : "bg-gray-400 text-white"
+                        ? "bg-green-500 text-white"
+                        : w.status === "Upcoming"
+                          ? "bg-blue-500 text-white"
+                          : "bg-gray-400 text-white"
                         }`}
                     >
                       {w.status || "N/A"}
@@ -415,6 +470,20 @@ const AdminWebinarTable = () => {
                   className={`border px-3 py-2 rounded w-full ${errors.youtubeVideoId ? "border-red-500" : ""}`}
                 />
                 {errors.youtubeVideoId && <p className="text-red-500 text-sm mt-1">{errors.youtubeVideoId}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Google Meet Link <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter Google Meet link"
+                  value={newWebinar.googleMeetLink}
+                  onChange={(e) => setNewWebinar({ ...newWebinar, googleMeetLink: e.target.value })}
+                  className={`border px-3 py-2 rounded w-full ${errors.googleMeetLink ? "border-red-500" : ""}`}
+                />
+                {errors.googleMeetLink && <p className="text-red-500 text-sm mt-1">{errors.googleMeetLink}</p>}
               </div>
 
               {/* Start Date */}

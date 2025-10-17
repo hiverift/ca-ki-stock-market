@@ -49,6 +49,7 @@ const MyWebinars = () => {
             itemType: "webinar",
             paid: c.paid,
             order,               // attach order info
+            googleMeetLink: c.details.googleMeetLink, // <-- add this
           }))
         );
 
@@ -92,7 +93,8 @@ const MyWebinars = () => {
   }
   console.log("Webinars:", webinars);
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 space-y-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 space-y-6 md:ml-64">
+
       <h1 className="text-2xl font-bold mb-6">My Webinars</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -151,14 +153,26 @@ const MyWebinars = () => {
 
             <hr className="border my-3" />
 
-            <div className="flex items-center justify-between mt-auto">
+            <div className="flex items-center justify-between mt-auto space-x-2">
               <span className="text-xl text-gray-600">
                 ₹{webinar.price || "Free"}
               </span>
-              <button className="px-4 py-2 rounded-md text-xs font-medium bg-yellow-400 hover:bg-yellow-500 text-gray-900 transition-colors">
-                Read More
-              </button>
+              {webinar.googleMeetLink ? (
+                <a
+                  href={webinar.googleMeetLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 rounded-md text-xs font-medium bg-green-500 hover:bg-green-600 text-white transition-colors"
+                >
+                  Join Now
+                </a>
+              ) : (
+                <button className="px-4 py-2 rounded-md text-xs font-medium bg-yellow-400 hover:bg-yellow-500 text-gray-900 transition-colors">
+                  Details
+                </button>
+              )}
             </div>
+
           </div>
         ))}
       </div>

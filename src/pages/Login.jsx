@@ -50,15 +50,15 @@ function LoginPage() {
       const payload =
         activeTab === "email"
           ? {
-              email: formData.email,
-              password: formData.password,
-              role: formData.role,
-            }
+            email: formData.email,
+            password: formData.password,
+            role: formData.role,
+          }
           : {
-              mobile: formData.mobile,
-              password: formData.password,
-              role: formData.role,
-            };
+            mobile: formData.mobile,
+            password: formData.password,
+            role: formData.role,
+          };
 
       const response = await axios.post(
         `${config.BASE_URL}auth/login`,
@@ -74,7 +74,7 @@ function LoginPage() {
         Swal.fire("Error", response.data.message, "error");
         return;
       }
-     console.log("Login Response:", response.data.result);
+      console.log("Login Response:", response.data.result);
       // Store tokens
       localStorage.setItem("accessToken", response.data.result?.accessToken);
       localStorage.setItem("refreshToken", response.data.result?.refreshToken);
@@ -122,9 +122,8 @@ function LoginPage() {
         <div className="flex rounded-lg bg-gray-100 mb-6">
           <button
             onClick={() => setActiveTab("email")}
-            className={`flex-1 py-2 text-sm rounded-lg ${
-              activeTab === "email" ? "bg-white shadow text-gray-800" : "text-gray-500"
-            }`}
+            className={`flex-1 py-2 text-sm rounded-lg ${activeTab === "email" ? "bg-white shadow text-gray-800" : "text-gray-500"
+              }`}
           >
             <div className="flex items-center justify-center gap-2">
               <EnvelopeIcon className="h-4 w-4" /> Email
@@ -132,9 +131,8 @@ function LoginPage() {
           </button>
           <button
             onClick={() => setActiveTab("mobile")}
-            className={`flex-1 py-2 text-sm rounded-lg ${
-              activeTab === "mobile" ? "bg-white shadow text-gray-800" : "text-gray-500"
-            }`}
+            className={`flex-1 py-2 text-sm rounded-lg ${activeTab === "mobile" ? "bg-white shadow text-gray-800" : "text-gray-500"
+              }`}
           >
             <div className="flex items-center justify-center gap-2">
               <PhoneIcon className="h-4 w-4" /> Mobile
@@ -220,9 +218,14 @@ function LoginPage() {
           </div>
 
           <div className="flex justify-end">
-            <a href="#" className="text-sm text-orange-600 hover:underline">
+            <button
+              type="button"
+              onClick={() => navigate("/forgot-password")}
+              className="text-sm text-orange-600 hover:underline"
+            >
               Forgot Password?
-            </a>
+            </button>
+
           </div>
 
           <button

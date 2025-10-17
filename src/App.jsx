@@ -1,4 +1,5 @@
 import React from "react";
+import { useLocation } from "react-router-dom";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 
@@ -44,6 +45,8 @@ import Adminorder from "./Admindashboard/Adminorder";
 import PremiumWebinars from "./Admindashboard/PremiumWebinars";
 import PremiumCourses from "./Admindashboard/PremiumCourses";
 import PremiumAppointments from "./Admindashboard/PremiumAppointments";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 // ---------------- Protected Route ----------------
 const ProtectedRoute = ({ children, role }) => {
@@ -56,10 +59,26 @@ const ProtectedRoute = ({ children, role }) => {
 };
 
 // ---------------- Navbar Wrapper ----------------
+// const AppWrapper = ({ children }) => {
+//   const location = window.location.pathname;
+//   const hideNavbarPaths = ["/user-dashboard", "/admin-dashboard"];
+//   const hideNavbar = hideNavbarPaths.some(path => location.startsWith(path));
+//   return (
+//     <>
+//       {!hideNavbar && <Navbar />}
+//       {children}
+//     </>
+//   );
+// };
+
+
 const AppWrapper = ({ children }) => {
-  const location = window.location.pathname;
+  const location = useLocation(); // ✅ reactive
   const hideNavbarPaths = ["/user-dashboard", "/admin-dashboard"];
-  const hideNavbar = hideNavbarPaths.some(path => location.startsWith(path));
+  const hideNavbar = hideNavbarPaths.some((path) =>
+    location.pathname.startsWith(path)
+  );
+
   return (
     <>
       {!hideNavbar && <Navbar />}
@@ -67,6 +86,8 @@ const AppWrapper = ({ children }) => {
     </>
   );
 };
+
+
 
 function App() {
   return (
@@ -82,6 +103,8 @@ function App() {
           <Route path="/faq" element={<FAQ />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/login" element={<Login />} />
+           <Route path="/forgot-password" element={<ForgotPassword/>} />
+            <Route path="/reset-password" element={<ResetPassword/>} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/appointment" element={<Appointment />} />
@@ -107,6 +130,8 @@ function App() {
             path="/admin-dashboard"
             element={
               <ProtectedRoute role="admin">
+
+
                 <AdminDashboard />
               </ProtectedRoute>
             }
