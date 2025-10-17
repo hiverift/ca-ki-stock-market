@@ -1,4 +1,4 @@
-import React , { useEffect,useState} from "react";
+import React, { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   HomeIcon,
@@ -13,19 +13,19 @@ import {
 const Sidebar = ({ isOpen, setIsOpen }) => {
   const navigate = useNavigate();
 
- const menuItems = [
-  { name: "Dashboard", icon: <HomeIcon className="h-5 w-5" />, path: "/user-dashboard" },
-  { name: "My Courses", icon: <BookOpenIcon className="h-5 w-5" />, path: "/user-dashboard/my-courses" },
-  { name: "My Appointment", icon: <ChatBubbleBottomCenterIcon className="h-5 w-5" />, path: "/user-dashboard/my-consultations" },
-  { name: "My Webinars", icon: <PresentationChartLineIcon className="h-5 w-5" />, path: "/user-dashboard/my-webinars" },
-  { name: "KYC Submit", icon: <PresentationChartLineIcon className="h-5 w-5" />, path: "/user-dashboard/profile-kyc" },
-];
-const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false); 
- useEffect(() => {
+  const menuItems = [
+    { name: "Dashboard", icon: <HomeIcon className="h-5 w-5" />, path: "/user-dashboard" },
+    { name: "My Courses", icon: <BookOpenIcon className="h-5 w-5" />, path: "/user-dashboard/my-courses" },
+    { name: "My Appointment", icon: <ChatBubbleBottomCenterIcon className="h-5 w-5" />, path: "/user-dashboard/my-consultations" },
+    { name: "My Webinars", icon: <PresentationChartLineIcon className="h-5 w-5" />, path: "/user-dashboard/my-webinars" },
+    { name: "KYC Submit", icon: <PresentationChartLineIcon className="h-5 w-5" />, path: "/user-dashboard/profile-kyc" },
+  ];
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
     const token = localStorage.getItem("accessToken");
     const adminToken = localStorage.getItem("admin"); // admin case
-      
+
     setIsLoggedIn(!!token); // only true for normal user login
     setIsAdmin(!!adminToken); // true only for admin login
   }, []);
