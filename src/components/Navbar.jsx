@@ -5,7 +5,7 @@ import { Menu, X } from "lucide-react";
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false); // ✅ admin flag
+  const [isAdmin, setIsAdmin] = useState(false); 
   const navigate = useNavigate();
 
   const toggleMenu = () => setIsOpen(!isOpen);
@@ -102,8 +102,9 @@ function Navbar() {
                   </Link>
                   <Link
                     to="/signup"
-                    className="bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded-lg transition"
-                  >
+                    // className="bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded-lg transition"
+                className="px-4 py-2 bg-blue-600 text-white rounded-xl flex items-center gap-2"
+                >
                     Sign Up
                   </Link>
                 </>

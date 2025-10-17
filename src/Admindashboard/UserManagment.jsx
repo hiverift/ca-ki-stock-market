@@ -3,6 +3,10 @@ import { Eye, EyeOff, Plus, X } from "lucide-react";
 import axios from "axios";
 import config from "../pages/config";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import toast from "react-hot-toast";
+import Swal from "sweetalert2";
+import "sweetalert2/dist/sweetalert2.min.css";
+import { Edit, Trash2 } from "lucide-react";
 
 // Centralized constants for pagination
 const CONST = {
@@ -59,6 +63,110 @@ const UserManagement = () => {
     }
   };
 
+  // ✅ Edit User
+// ✅ Edit User
+const handleEditUser = async (user) => {
+  Swal.fire({
+    title: "Edit User",
+    html: `
+      <input id="name" class="swal2-input" placeholder="Name" value="${user.name}" />
+      <input id="email" class="swal2-input" placeholder="Email" value="${user.email}" />
+      <input id="mobile" class="swal2-input" placeholder="Mobile" value="${user.mobile}" />
+      <select id="role" class="swal2-input">
+        <option value="user" ${user.role === "user" ? "selected" : ""}>User</option>
+        <option value="admin" ${user.role === "admin" ? "selected" : ""}>Admin</option>
+      </select>
+      <select id="status" class="swal2-input">
+        <option value="active" ${user.status === "active" ? "selected" : ""}>Active</option>
+        <option value="inactive" ${user.status === "inactive" ? "selected" : ""}>Inactive</option>
+      </select>
+    `,
+    focusConfirm: false,
+    showCancelButton: true,
+    confirmButtonText: "Update",
+    confirmButtonColor: "#facc15",
+    preConfirm: () => {
+      return {
+        name: document.getElementById("name").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        mobile: document.getElementById("mobile").value.trim(),
+        role: document.getElementById("role").value,
+        status: document.getElementById("status").value,
+      };
+    },
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      try {
+        const token = localStorage.getItem("accessToken");
+        if (!token) {
+          Swal.fire("Error", "No token found. Please login again.", "error");
+          return;
+        }
+
+        const url = `${config.BASE_URL.replace(/\/$/, "")}/users/${user._id}`;
+
+        await axios.put(url, result.value, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        Swal.fire("Updated!", "User details updated successfully.", "success");
+
+        // ✅ Update the users state immediately
+        setUsers((prevUsers) =>
+          prevUsers.map((u) =>
+            u._id === user._id ? { ...u, ...result.value } : u
+          )
+        );
+      } catch (err) {
+        console.error("Error updating user:", err.response?.data || err);
+        Swal.fire(
+          "Error",
+          err.response?.data?.message || "Failed to update user details.",
+          "error"
+        );
+      }
+    }
+  });
+};
+
+
+
+  // ✅ Delete User
+  const handleDeleteUser = async (userId) => {
+    Swal.fire({
+      title: "Are you sure?",
+      text: "This user will be permanently deleted!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete it!",
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#6b7280",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          const token = localStorage.getItem("accessToken");
+          if (!token) {
+            Swal.fire("Error", "No token found. Please login again.", "error");
+            return;
+          }
+
+          await axios.delete(`${config.BASE_URL}/users/${userId}`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          Swal.fire("Deleted!", "User has been deleted.", "success");
+          fetchUsers();
+        } catch (err) {
+          console.error("Error deleting user:", err);
+          Swal.fire("Error", "Failed to delete user.", "error");
+        }
+      }
+    });
+  };
+
+
   // ✅ Add User
   const handleAddUser = async (e) => {
     e.preventDefault();
@@ -113,20 +221,20 @@ const UserManagement = () => {
   }, []);
 
   // ✅ Search + Filter
-// ✅ Search + Filter
-const filteredUsers = useMemo(() => {
-  const normalize = (str) =>
-    (str || "").toLowerCase().replace(/\s+/g, " ").trim();
+  // ✅ Search + Filter
+  const filteredUsers = useMemo(() => {
+    const normalize = (str) =>
+      (str || "").toLowerCase().replace(/\s+/g, " ").trim();
 
-  const query = normalize(searchTerm);
+    const query = normalize(searchTerm);
 
-  return users.filter(
-    (user) =>
-      normalize(user.name).includes(query) ||
-      normalize(user.email).includes(query) ||
-      normalize(user.mobile).includes(query)
-  );
-}, [users, searchTerm]);
+    return users.filter(
+      (user) =>
+        normalize(user.name).includes(query) ||
+        normalize(user.email).includes(query) ||
+        normalize(user.mobile).includes(query)
+    );
+  }, [users, searchTerm]);
 
 
   const totalItems = filteredUsers.length;
@@ -179,11 +287,10 @@ const filteredUsers = useMemo(() => {
           key={p}
           aria-current={p === currentPage ? "page" : undefined}
           onClick={() => goTo(p)}
-          className={`px-3 py-1 rounded-md text-sm font-medium transition transform ${
-            p === currentPage
-              ? CONST.ACTIVE_PAGE_CLASS
-              : "bg-white text-gray-700 hover:bg-yellow-100"
-          }`}
+          className={`px-3 py-1 rounded-md text-sm font-medium transition transform ${p === currentPage
+            ? CONST.ACTIVE_PAGE_CLASS
+            : "bg-white text-gray-700 hover:bg-yellow-100"
+            }`}
         >
           {p}
         </button>
@@ -230,12 +337,48 @@ const filteredUsers = useMemo(() => {
           onChange={(e) => setSearchTerm(e.target.value)}
           className="px-3 py-2 border border-gray-300  rounded-lg w-1/3 focus:ring-2 focus:ring-yellow-400"
         />
-        <button
+        {/* <button
           onClick={() => setIsAddModalOpen(true)}
-          className="flex items-center gap-2 bg-yellow-500 px-4 py-2 rounded-lg text-white hover:bg-yellow-600 transition"
+          className="flex items-center gap-2 bg-blue-600 px-4 py-2 rounded-lg text-white hover:bg-yellow-600 transition"
+        >
+          <Plus size={16} /> Add User
+        </button> */}
+
+        <button
+          onClick={() => {
+            const id = toast.custom((t) => (
+              <div
+                className={`${t.visible ? "animate-enter" : "animate-leave"
+                  } max-w-sm w-full bg-white shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
+              >
+                <div className="flex-1 w-0 p-4">
+                  <div className="flex items-start">
+                    <div className="ml-3 flex-1">
+                      <p className="text-sm font-medium text-gray-900">
+                        You are not allowed to add users ❌
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex border-l border-gray-200">
+                  <button
+                    onClick={() => toast.dismiss(id)}
+                    className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-gray-500 hover:text-gray-700 focus:outline-none"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              </div>
+            ));
+          }}
+          className="flex items-center gap-2 bg-blue-600 px-4 py-2 rounded-lg text-white hover:bg-yellow-600 transition"
         >
           <Plus size={16} /> Add User
         </button>
+
+
+
+
       </div>
 
       {/* 📋 Users Table */}
@@ -260,16 +403,26 @@ const filteredUsers = useMemo(() => {
                 <td className="p-3 border border-gray-300 capitalize">{user.role}</td>
                 <td className="p-3 border border-gray-300 capitalize">{user.status}</td>
                 <td className="p-3 border border-gray-300">
-                  <button
-                    onClick={() => {
-                      setSelectedUser(user);
-                      setIsViewModalOpen(true);
-                    }}
-                    className="text-blue-600 hover:underline"
-                  >
-                    View
-                  </button>
+                  <div className="flex justify-center items-center gap-3">
+                    <button
+                      onClick={() => handleEditUser(user)}
+                      className="p-2 rounded-full bg-yellow-100 text-yellow-600 hover:bg-yellow-200 transition"
+                      title="Edit"
+                    >
+                      <Edit size={18} />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteUser(user._id)}
+                      className="p-2 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition"
+                      title="Delete"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
                 </td>
+
+
+
               </tr>
             ))}
             {paginatedUsers.length === 0 && (
@@ -325,7 +478,7 @@ const filteredUsers = useMemo(() => {
       )}
 
       {/* ➕ Add User Modal */}
-      {isAddModalOpen && (
+      {/* {isAddModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
           <div className="bg-white rounded-lg shadow-lg p-6 w-96">
             <h2 className="text-lg font-bold mb-4">Add User</h2>
@@ -392,7 +545,7 @@ const filteredUsers = useMemo(() => {
             </form>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 };

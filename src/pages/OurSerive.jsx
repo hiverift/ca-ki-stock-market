@@ -18,7 +18,7 @@ const OurSerive = () => {
   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto px-4">
     
     {/* Card 1 */}
-    <Link to="/consultancy">
+    <Link to="/appointment">
       <div className="bg-white rounded-xl shadow hover:shadow-lg transition p-6 text-center flex flex-col items-center gap-6 h-full">
         <div className="bg-yellow-100 p-5 rounded-full flex items-center justify-center mb-4">
           <RiGroupLine className="text-3xl text-yellow-600" />

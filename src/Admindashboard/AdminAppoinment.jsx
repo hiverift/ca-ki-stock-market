@@ -182,7 +182,7 @@ const AdminAppointment = () => {
                 key={time}
                 onClick={() => toggleTime(time)}
                 className={`px-4 py-2 rounded-xl border text-sm font-medium transition ${selectedTimes.includes(time)
-                  ? "bg-yellow-500 text-white border-yellow-500 shadow"
+                  ? "bg-blue-600  text-white border-yellow-500 shadow"
                   : "bg-gray-50 text-gray-700 border-gray-300 hover:bg-yellow-50"
                   }`}
               >
@@ -193,14 +193,15 @@ const AdminAppointment = () => {
         </div>
 
         {/* Save Button */}
-        <div className="text-center mb-10">
-          <button
-            onClick={handleSaveSlots}
-            className="px-10 py-3 bg-yellow-500 text-white font-semibold rounded-xl shadow-md hover:bg-yellow-600 transition transform hover:scale-105"
-          >
-            💾 Save Slot
-          </button>
-        </div>
+        <div className="flex justify-center mb-10">
+  <button
+    onClick={handleSaveSlots}
+    className="px-6 py-3 bg-blue-600 text-white rounded-xl flex items-center gap-2"
+  >
+    💾 Save Slot
+  </button>
+</div>
+
 
         {/* Saved Slots List */}
         <div className="bg-white rounded-3xl shadow-2xl p-6 mt-6 overflow-hidden">

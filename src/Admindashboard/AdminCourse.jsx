@@ -136,73 +136,168 @@ const AdminCourseTable = () => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
 
-    // ✅ Validate all fields
-    const newErrors = {};
-    Object.keys(formData).forEach((field) => {
-      if (
-        formData[field] === "" ||
-        formData[field] === null ||
-        (Array.isArray(formData[field]) && formData[field].length === 0)
-      ) {
-        newErrors[field] = "This field is required";
+  //   // ✅ Validate all fields
+  //   const newErrors = {};
+  //   Object.keys(formData).forEach((field) => {
+  //     if (
+  //       formData[field] === "" ||
+  //       formData[field] === null ||
+  //       (Array.isArray(formData[field]) && formData[field].length === 0)
+  //     ) {
+  //       newErrors[field] = "This field is required";
+  //     }
+  //   });
+
+  //   if (Object.keys(newErrors).length > 0) {
+  //     setErrors(newErrors);
+  //     return;
+  //   }
+
+  //   setLoading(true);
+
+  //   try {
+  //     const url = editCourseId
+  //       ? `${BASE_URL}courses/${editCourseId}`
+  //       : `${BASE_URL}courses/createCrouses`;
+
+  //     const method = editCourseId ? "PUT" : "POST";
+  //     const form = new FormData();
+  //     form.append("itemType", "course");
+
+  //     for (let key in formData) {
+  //       if (key === "syllabus" && Array.isArray(formData[key])) {
+  //         form.append(key, JSON.stringify(formData[key]));
+  //       } else {
+  //         form.append(key, formData[key]);
+  //       }
+  //     }
+
+  //     const accessToken = localStorage.getItem("accessToken");
+
+  //     const res = await fetch(url, {
+  //       method,
+  //       headers: { Authorization: `Bearer ${accessToken}` },
+  //       body: form,
+  //     });
+
+  //     const data = await res.json();
+
+  //     if (res.ok) {
+  //       if (editCourseId) {
+  //         setCourses((prev) =>
+  //           prev.map((c) => (c._id === editCourseId ? data.result : c))
+  //         );
+  //       } else {
+  //         setCourses((prev) => [...prev, data.result]);
+  //       }
+  //       resetForm();
+  //     } else {
+  //       console.error("Error saving course:", data);
+  //     }
+  //   } catch (err) {
+  //     console.error("Error submitting form:", err);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  // ✅ Validate all fields
+  const newErrors = {};
+  Object.keys(formData).forEach((field) => {
+    if (
+      formData[field] === "" ||
+      formData[field] === null ||
+      (Array.isArray(formData[field]) && formData[field].length === 0)
+    ) {
+      newErrors[field] = "This field is required";
+    }
+  });
+
+  if (Object.keys(newErrors).length > 0) {
+    setErrors(newErrors);
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const url = editCourseId
+      ? `${BASE_URL}courses/${editCourseId}`
+      : `${BASE_URL}courses/createCrouses`;
+
+    const method = editCourseId ? "PUT" : "POST";
+    const form = new FormData();
+    form.append("itemType", "course");
+
+    for (let key in formData) {
+      if (key === "syllabus" && Array.isArray(formData[key])) {
+        form.append(key, JSON.stringify(formData[key]));
+      } else {
+        form.append(key, formData[key]);
       }
+    }
+
+    const accessToken = localStorage.getItem("accessToken");
+
+    const res = await fetch(url, {
+      method,
+      headers: { Authorization: `Bearer ${accessToken}` },
+      body: form,
     });
 
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
+    const data = await res.json();
 
-    setLoading(true);
-
-    try {
-      const url = editCourseId
-        ? `${BASE_URL}courses/${editCourseId}`
-        : `${BASE_URL}courses/createCrouses`;
-
-      const method = editCourseId ? "PUT" : "POST";
-      const form = new FormData();
-      form.append("itemType", "course");
-
-      for (let key in formData) {
-        if (key === "syllabus" && Array.isArray(formData[key])) {
-          form.append(key, JSON.stringify(formData[key]));
-        } else {
-          form.append(key, formData[key]);
-        }
-      }
-
-      const accessToken = localStorage.getItem("accessToken");
-
-      const res = await fetch(url, {
-        method,
-        headers: { Authorization: `Bearer ${accessToken}` },
-        body: form,
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        if (editCourseId) {
-          setCourses((prev) =>
-            prev.map((c) => (c._id === editCourseId ? data.result : c))
-          );
-        } else {
-          setCourses((prev) => [...prev, data.result]);
-        }
-        resetForm();
+    if (res.ok) {
+      if (editCourseId) {
+        setCourses((prev) =>
+          prev.map((c) => (c._id === editCourseId ? data.result : c))
+        );
       } else {
-        console.error("Error saving course:", data);
+        setCourses((prev) => [...prev, data.result]);
       }
-    } catch (err) {
-      console.error("Error submitting form:", err);
-    } finally {
-      setLoading(false);
+
+      // ✅ Reset form
+      resetForm();
+
+      // ✅ Show SweetAlert success
+      Swal.fire({
+        title: "Success!",
+        text: editCourseId
+          ? "Course updated successfully."
+          : "Course added successfully.",
+        icon: "success",
+        confirmButtonText: "OK",
+        confirmButtonColor: "#3085d6",
+      });
+    } else {
+      Swal.fire({
+        title: "Error!",
+        text: data.message || "Failed to save course.",
+        icon: "error",
+        confirmButtonText: "OK",
+        confirmButtonColor: "#d33",
+      });
     }
-  };
+  } catch (err) {
+    console.error("Error submitting form:", err);
+    Swal.fire({
+      title: "Error!",
+      text: "Something went wrong.",
+      icon: "error",
+      confirmButtonText: "OK",
+      confirmButtonColor: "#d33",
+    });
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const handleEdit = (course) => {
     setFormData({

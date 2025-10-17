@@ -9,9 +9,11 @@ const AdminOrder = () => {
   const [error, setError] = useState("");
 
   const [filters, setFilters] = useState({
-    search: "",
-    status: "all", // all, paid, cancelled, pending, etc.
-  });
+  search: "",
+  date: "", // 🔹 only one date now
+});
+
+
 
   // Fetch Orders from API
   const fetchOrders = async () => {
@@ -115,6 +117,7 @@ const AdminOrder = () => {
           onChange={handleFilterChange}
           className="border px-3 py-2 rounded-lg flex-1 sm:max-w-xs"
         />
+        
         <select
           name="status"
           value={filters.status}
