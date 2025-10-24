@@ -5,7 +5,7 @@ import { Menu, X } from "lucide-react";
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false); 
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
 
   const toggleMenu = () => setIsOpen(!isOpen);
@@ -20,24 +20,34 @@ function Navbar() {
     { name: "Appointment", path: "/appointment" },
   ];
 
-  // ✅ check login status and admin status
+  // ✅ Check login status and update whenever loginStatusChanged event fires
   useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    const adminToken = localStorage.getItem("admin"); // admin case
+    const checkLoginStatus = () => {
+      const token = localStorage.getItem("accessToken");
+      const adminToken = localStorage.getItem("admin");
+      setIsLoggedIn(!!token);
+      setIsAdmin(!!adminToken);
+    };
 
-    setIsLoggedIn(!!token); // only true for normal user login
-    setIsAdmin(!!adminToken); // true only for admin login
+    checkLoginStatus(); // initial check
+
+    // 👇 Listen for login status changes globally
+    window.addEventListener("loginStatusChanged", checkLoginStatus);
+    return () => window.removeEventListener("loginStatusChanged", checkLoginStatus);
   }, []);
 
+  // ✅ Handle Logout
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("user");
     localStorage.removeItem("userId");
-
-    localStorage.removeItem("admin");
     localStorage.removeItem("admin");
     localStorage.removeItem("adminId");
+    localStorage.removeItem("token"); // in case token used for auto-login
+
+    // 👇 Notify all components that login status changed
+    window.dispatchEvent(new Event("loginStatusChanged"));
 
     setIsLoggedIn(false);
     setIsAdmin(false);
@@ -84,7 +94,6 @@ function Navbar() {
 
             {/* Desktop Buttons */}
             <div className="hidden md:flex items-center space-x-3">
-              {/* Only show logout for normal users, not admins */}
               {isLoggedIn && !isAdmin ? (
                 <button
                   onClick={handleLogout}
@@ -102,9 +111,8 @@ function Navbar() {
                   </Link>
                   <Link
                     to="/signup"
-                    // className="bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded-lg transition"
-                className="px-4 py-2 bg-blue-600 text-white rounded-xl flex items-center gap-2"
-                >
+                    className="px-4 py-2 bg-blue-600 text-white rounded-xl flex items-center gap-2"
+                  >
                     Sign Up
                   </Link>
                 </>
@@ -176,6 +184,3 @@ function Navbar() {
 }
 
 export default Navbar;
-
-
-

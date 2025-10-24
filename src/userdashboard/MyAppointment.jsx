@@ -50,9 +50,9 @@ const MyAppointment = () => {
     fetchAppointments();
   }, []);
 
-  const handleItemClick = (appointment) => {
-    alert("Navigating to appointment details is not implemented yet.");
-  };
+  // const handleItemClick = (appointment) => {
+  //   alert("Navigating to appointment details is not implemented yet.");
+  // };
 
   if (loading) {
     return (
@@ -80,7 +80,7 @@ const MyAppointment = () => {
         {appointments.map((appointment) => (
           <div
             key={appointment._id}
-            onClick={() => handleItemClick(appointment)}
+            // onClick={() => handleItemClick(appointment)}
             className="bg-white p-4 rounded-xl shadow-md border border-gray-200 flex flex-col cursor-pointer hover:shadow-lg transition"
           >
             {/* ✅ Thumbnail / Video placeholder */}

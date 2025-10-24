@@ -1,20 +1,31 @@
 import React, { useEffect, useState } from "react";
+
 import { Calendar, momentLocalizer, Views } from "react-big-calendar";
 import moment from "moment-timezone";
 import "react-big-calendar/lib/css/react-big-calendar.css";
+import { useNavigate, useLocation } from "react-router-dom";
+
+import Swal from "sweetalert2";
+import config from "./config";
+
 import {
   getServices,
   getAvailability,
   createBooking
 } from "../Api/bookings/bookings";
 import ApiLogin from "../Api/bookings/auth.js";
-import { useNavigate } from "react-router-dom";
+import axios, { Axios } from "axios";
 
 const localizer = momentLocalizer(moment);
 
 export default function AppointmentPage() {
+
+
   const navigate = useNavigate();
 
+  const location = useLocation();
+
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [step, setStep] = useState(1);
   const [date, setDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
@@ -31,6 +42,96 @@ export default function AppointmentPage() {
   const [postLoginAction, setPostLoginAction] = useState(null);
 
   const [availableDates, setAvailableDates] = useState([]); // Dates with slots
+
+
+  const [registerForm, setRegisterForm] = useState({
+    name: "",
+    email: "",
+    mobile: "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [agreed, setAgreed] = useState(false);
+  const [registerLoading, setRegisterLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // const handleRegisterSubmit = async () => {
+  //   if (!agreed) {
+  //     alert("You must agree to Terms & Privacy Policy");
+  //     return;
+  //   }
+  //   if (!registerForm.name || !registerForm.email || !registerForm.mobile || !registerForm.password || !registerForm.confirmPassword) {
+  //     alert("Please fill all fields");
+  //     return;
+  //   }
+  //   if (registerForm.password !== registerForm.confirmPassword) {
+  //     alert("Passwords do not match");
+  //     return;
+  //   }
+
+  //   setRegisterLoading(true);
+  //   try {
+  //     const res = await axios.post(`${config.BASE_URL}auth/register`, {
+  //       name: registerForm.name,
+  //       email: registerForm.email,
+  //       mobile: registerForm.mobile,
+  //       password: registerForm.password,
+  //       role: "user",
+  //     });
+
+  //     if (res.data.statusCode === 403) {
+  //       alert("Email or mobile already exists");
+  //       return;
+  //     }
+
+  //     // Auto-login after signup
+  //     const loginRes = await axios.post(`${config.BASE_URL}auth/login`, {
+  //       email: registerForm.email,
+  //       password: registerForm.password,
+  //     });
+  //     const token = loginRes.data.token ?? loginRes.data.accessToken;
+  //     if (token) {
+  //       localStorage.setItem("token", token);
+  //       localStorage.setItem("accessToken", token);
+  //       setIsAuthenticated(true);
+  //       setShowRegisterModal(false);
+  //       setStep(3); // continue to payment
+  //     }
+  //   } catch (err) {
+  //     console.error(err);
+  //     alert(err.response?.data?.message || "Registration failed");
+  //   } finally {
+  //     setRegisterLoading(false);
+  //   }
+  // };
+
+
+
+  // Updated Next button handler
+  // const handleNextPaymentStep = () => {
+  //   const token = localStorage.getItem("token") || localStorage.getItem("accessToken");
+  //   if (!token) {
+  //     // If not logged in, open login modal and allow switch to registration
+  //     openLoginModal(() => setStep(3));
+  //     return;
+  //   }
+  //   setStep(3);
+  // };
+
+  // const handleNextPaymentStep = () => {
+  //   const token = localStorage.getItem("token") || localStorage.getItem("accessToken");
+
+  //   if (!token) {
+  //     // Redirect to login and store the current page so user can come back
+  //     navigate("/login", { state: { from: location.pathname } });
+  //     return;
+  //   }
+
+  //   // If already logged in, move to payment step
+  //   setStep(3);
+  // };
+
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -73,7 +174,7 @@ export default function AppointmentPage() {
         if (user.email) localStorage.setItem("userEmail", user.email);
         try {
           localStorage.setItem("user", JSON.stringify(user));
-        } catch (e) {}
+        } catch (e) { }
       }
 
       setIsAuthenticated(true);
@@ -265,6 +366,70 @@ export default function AppointmentPage() {
     });
   };
 
+  const handleRegisterSubmit = async () => {
+    if (!agreed) {
+      Swal.fire("Error", "Please agree to the Terms and Privacy Policy", "error");
+      return;
+    }
+
+    if (
+      !registerForm.name ||
+      !registerForm.email ||
+      !registerForm.mobile ||
+      !registerForm.password ||
+      !registerForm.confirmPassword
+    ) {
+      Swal.fire("Error", "Please fill all required fields", "error");
+      return;
+    }
+
+    if (registerForm.password !== registerForm.confirmPassword) {
+      Swal.fire("Error", "Passwords do not match", "error");
+      return;
+    }
+
+    try {
+      setRegisterLoading(true);
+
+      const response = await axios.post(`${config.BASE_URL}auth/register`, {
+        name: registerForm.name,
+        email: registerForm.email,
+        mobile: registerForm.mobile,
+        password: registerForm.password,
+        role: "user",
+      });
+
+      if (response.data.statusCode === 403) {
+        Swal.fire("Error", "Email or mobile number already exists", "error");
+        return;
+      }
+
+      Swal.fire("Success", "Account created successfully!", "success").then(() => {
+        // Reset form
+        setRegisterForm({
+          name: "",
+          email: "",
+          mobile: "",
+          password: "",
+          confirmPassword: "",
+        });
+        setAgreed(false);
+        setShowRegisterModal(false);
+        setShowLoginModal(true); // Optionally open login after successful registration
+      });
+    } catch (error) {
+      console.error("Register error:", error);
+      if (error.response) {
+        Swal.fire("Error", error.response.data.message || "Something went wrong!", "error");
+      } else {
+        Swal.fire("Error", "Unable to connect to server. Try again later.", "error");
+      }
+    } finally {
+      setRegisterLoading(false);
+    }
+  };
+
+
   return (
     <div className="px-4 pt-5 md:py-12 bg-gray-50 min-h-screen mt-10">
       <div className="max-w-6xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden flex flex-col md:flex-row h-[700px]">
@@ -274,11 +439,10 @@ export default function AppointmentPage() {
             <div
               key={i}
               onClick={() => setStep(i + 1)}
-              className={`cursor-pointer p-3 rounded-lg text-sm font-medium ${
-                step === i + 1
-                  ? "bg-yellow-400 text-black"
-                  : "bg-gray-200 text-gray-600 hover:bg-gray-300"
-              }`}
+              className={`cursor-pointer p-3 rounded-lg text-sm font-medium ${step === i + 1
+                ? "bg-yellow-400 text-black"
+                : "bg-gray-200 text-gray-600 hover:bg-gray-300"
+                }`}
             >
               {label}
             </div>
@@ -303,11 +467,10 @@ export default function AppointmentPage() {
                     <div
                       key={s._id ?? s.id}
                       onClick={() => setSelectedService(s)}
-                      className={`cursor-pointer border rounded-lg p-4 text-center ${
-                        selectedService?._id === s._id
-                          ? "border-yellow-400 bg-yellow-50"
-                          : "border-gray-200"
-                      }`}
+                      className={`cursor-pointer border rounded-lg p-4 text-center ${selectedService?._id === s._id
+                        ? "border-yellow-400 bg-yellow-50"
+                        : "border-gray-200"
+                        }`}
                     >
                       <h3 className="font-medium">{s.name}</h3>
                       <p className="text-gray-600">₹{s.price}</p>
@@ -375,13 +538,12 @@ export default function AppointmentPage() {
                             key={slot.id}
                             onClick={() => !isFull && setSelectedSlot(slot)}
                             disabled={isFull}
-                            className={`px-4 py-2 rounded-lg border ${
-                              selectedSlot?.id === slot.id
-                                ? "bg-yellow-400 text-black border-yellow-400"
-                                : isFull
+                            className={`px-4 py-2 rounded-lg border ${selectedSlot?.id === slot.id
+                              ? "bg-yellow-400 text-black border-yellow-400"
+                              : isFull
                                 ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
                                 : "bg-gray-50 text-gray-700 border-gray-200"
-                            }`}
+                              }`}
                           >
                             <div className="flex items-center justify-between">
                               <span>{slot.label}</span>
@@ -415,6 +577,8 @@ export default function AppointmentPage() {
                 >
                   Next: Payment
                 </button>
+
+
               </div>
             </>
           )}
@@ -466,11 +630,13 @@ export default function AppointmentPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-6">
             <h3 className="text-lg font-semibold mb-2">Login to continue</h3>
+
             {loginError && (
               <div className="mb-4 p-2 bg-red-50 text-red-700 text-sm rounded">
                 {loginError}
               </div>
             )}
+
             <div className="space-y-3">
               <div>
                 <label className="text-xs text-gray-600">Email</label>
@@ -497,6 +663,7 @@ export default function AppointmentPage() {
                 />
               </div>
             </div>
+
             <div className="mt-4 flex justify-between items-center">
               <button
                 onClick={() => setShowLoginModal(false)}
@@ -513,9 +680,141 @@ export default function AppointmentPage() {
                 {loginLoading ? "Logging in..." : "Login"}
               </button>
             </div>
+
+            <p className="mt-2 text-sm text-gray-500">
+              Don't have an account?{" "}
+              <span
+                className="text-blue-500 cursor-pointer hover:underline"
+                onClick={() => {
+                  setShowLoginModal(false);
+                  setShowRegisterModal(true);
+                }}
+              >
+                Register here
+              </span>
+            </p>
+
+
           </div>
         </div>
       )}
+
+      {showRegisterModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-6">
+            <h3 className="text-lg font-semibold mb-2">Register</h3>
+
+            {/* Form state */}
+            <div className="space-y-3">
+              <input
+                type="text"
+                placeholder="Name"
+                className="w-full px-3 py-2 border rounded"
+                value={registerForm.name}
+                onChange={(e) => setRegisterForm({ ...registerForm, name: e.target.value })}
+              />
+              <input
+                type="email"
+                placeholder="Email"
+                className="w-full px-3 py-2 border rounded"
+                value={registerForm.email}
+                onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
+              />
+              <input
+                type="tel"
+                placeholder="Mobile Number"
+                className="w-full px-3 py-2 border rounded"
+                value={registerForm.mobile}
+                onChange={(e) => setRegisterForm({ ...registerForm, mobile: e.target.value })}
+              />
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Password"
+                className="w-full px-3 py-2 border rounded"
+                value={registerForm.password}
+                onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
+              />
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Confirm Password"
+                className="w-full px-3 py-2 border rounded"
+                value={registerForm.confirmPassword}
+                onChange={(e) => setRegisterForm({ ...registerForm, confirmPassword: e.target.value })}
+              />
+            </div>
+
+            {/* Toggle password visibility */}
+            <div className="flex space-x-2 mt-1">
+              <button
+                type="button"
+                className="text-sm text-gray-600"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? "Hide Password" : "Show Password"}
+              </button>
+              <button
+                type="button"
+                className="text-sm text-gray-600"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              >
+                {showConfirmPassword ? "Hide Confirm" : "Show Confirm"}
+              </button>
+            </div>
+
+            {/* Terms checkbox */}
+            <div className="mt-3 flex items-start">
+              <input
+                type="checkbox"
+                className="mt-1 mr-2 accent-yellow-500"
+                checked={agreed}
+                onChange={() => setAgreed(!agreed)}
+              />
+              <label className="text-sm text-gray-700">
+                I agree to the <a href="#" className="text-blue-600 hover:underline">Terms</a> and{" "}
+                <a href="#" className="text-blue-600 hover:underline">Privacy Policy</a>
+              </label>
+            </div>
+
+            {/* Buttons */}
+            <div className="mt-4 flex justify-between items-center">
+              <button
+                onClick={() => setShowRegisterModal(false)}
+                className="px-4 py-2 rounded border"
+                disabled={registerLoading}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 rounded bg-yellow-400 hover:bg-yellow-500 text-black"
+                onClick={handleRegisterSubmit}
+                disabled={registerLoading || !agreed}
+              >
+                {registerLoading ? "Registering..." : "Register"}
+              </button>
+            </div>
+
+            {/* Login link */}
+            <p className="mt-2 text-sm text-gray-500">
+              Already have an account?{" "}
+              <span
+                className="text-blue-500 cursor-pointer hover:underline"
+                onClick={() => {
+                  setShowRegisterModal(false);
+                  setShowLoginModal(true);
+                }}
+              >
+                Login here
+              </span>
+            </p>
+          </div>
+        </div>
+      )}
+
+
+
+
+
+
     </div>
   );
 }

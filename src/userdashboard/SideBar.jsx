@@ -8,10 +8,40 @@ import {
   ArrowRightOnRectangleIcon,
   Bars3Icon,
   XMarkIcon,
+  ArrowLeftIcon,
 } from "@heroicons/react/24/outline";
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
   const navigate = useNavigate();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("accessToken");
+    const adminToken = localStorage.getItem("admin");
+    setIsLoggedIn(!!token);
+    setIsAdmin(!!adminToken);
+  }, []);
+
+  const handleLogout = () => {
+    [
+      "accessToken",
+      "refreshToken",
+      "user",
+      "userId",
+      "admin",
+      "adminId",
+    ].forEach((key) => localStorage.removeItem(key));
+
+    setIsLoggedIn(false);
+    setIsAdmin(false);
+    navigate("/login");
+  };
+
+  const handleGoHome = () => {
+    navigate("/");
+    setIsOpen(false);
+  };
 
   const menuItems = [
     { name: "Dashboard", icon: <HomeIcon className="h-5 w-5" />, path: "/user-dashboard" },
@@ -20,28 +50,6 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     { name: "My Webinars", icon: <PresentationChartLineIcon className="h-5 w-5" />, path: "/user-dashboard/my-webinars" },
     { name: "KYC Submit", icon: <PresentationChartLineIcon className="h-5 w-5" />, path: "/user-dashboard/profile-kyc" },
   ];
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-  useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    const adminToken = localStorage.getItem("admin"); // admin case
-
-    setIsLoggedIn(!!token); // only true for normal user login
-    setIsAdmin(!!adminToken); // true only for admin login
-  }, []);
-  const handleLogout = () => {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-    localStorage.removeItem("user");
-    localStorage.removeItem("userId");
-    localStorage.removeItem("admin");
-    localStorage.removeItem("admin");
-    localStorage.removeItem("adminId");
-
-    setIsLoggedIn(false);
-    setIsAdmin(false);
-    navigate("/login");
-  };
 
   return (
     <>
@@ -59,8 +67,8 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       {/* Sidebar */}
       <div
         className={`fixed top-0 left-0 h-screen bg-white shadow-md z-40 transform transition-transform duration-300
-    ${isOpen ? "translate-x-0" : "-translate-x-full"} 
-    md:translate-x-0 md:w-64 w-64 flex flex-col py-6 px-4`}
+        ${isOpen ? "translate-x-0" : "-translate-x-full"} 
+        md:translate-x-0 md:w-64 w-64 flex flex-col py-6 px-4`}
       >
         <div className="flex-1 overflow-y-auto">
           <h1
@@ -77,7 +85,10 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                 to={item.path}
                 onClick={() => setIsOpen(false)} // close sidebar on mobile
                 className={({ isActive }) =>
-                  `flex items-center gap-3 py-2 px-3 rounded-md transition font-medium ${isActive ? "bg-yellow-200 text-black" : "text-gray-700 hover:bg-yellow-100"
+                  `flex items-center gap-3 py-2 px-3 rounded-md transition font-medium ${
+                    isActive
+                      ? "bg-yellow-200 text-black"
+                      : "text-gray-700 hover:bg-yellow-100"
                   }`
                 }
               >
@@ -90,16 +101,27 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
         {/* Footer buttons */}
         <div className="flex flex-col gap-3 mt-6">
+          {/* Back to Home button */}
           <button
-            onClick={handleLogout}
-            className="flex items-center gap-3 py-2 px-3 rounded-md hover:bg-red-100 transition text-red-600 font-medium"
+            onClick={handleGoHome}
+            className="flex items-center gap-3 py-2 px-3 rounded-md hover:bg-blue-100 transition text-blue-600 font-medium"
           >
-            <ArrowRightOnRectangleIcon className="h-5 w-5" />
-            <span>logout </span>
+            <ArrowLeftIcon className="h-5 w-5" />
+            <span>Back to Home</span>
           </button>
+
+          {/* Logout button (only if logged in) */}
+          {isLoggedIn && (
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-3 py-2 px-3 rounded-md hover:bg-red-100 transition text-red-600 font-medium"
+            >
+              <ArrowRightOnRectangleIcon className="h-5 w-5" />
+              <span>Logout</span>
+            </button>
+          )}
         </div>
       </div>
-
 
       {/* Overlay for mobile */}
       {isOpen && (
