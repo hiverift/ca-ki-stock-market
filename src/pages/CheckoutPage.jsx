@@ -159,6 +159,11 @@ export default function CheckoutPage() {
         setUserId(user._id || "");
         setIsLoggedIn(true);
 
+        // ✅ Dispatch event so Navbar updates
+        window.dispatchEvent(new Event("loginStatusChanged"));
+
+
+
         Swal.fire({
           icon: "success",
           title: "Login Successful!",
@@ -189,7 +194,7 @@ export default function CheckoutPage() {
     if (!address.lastName) e.lastName = "Required";
     if (!address.email || !/^\S+@\S+\.\S+$/.test(address.email)) e.email = "Invalid email";
     if (!address.mobile || !/^\d{7,15}$/.test(address.mobile)) e.mobile = "Invalid phone";
-    if (!address.fullAddress) e.fullAddress = "Required";
+    // if (!address.fullAddress) e.fullAddress = "Required";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -230,10 +235,10 @@ export default function CheckoutPage() {
           location.state?.coursetype
             ? "course"
             : location.state?.webinartype
-            ? "webinar"
-            : location.state?.appointmenttype
-            ? "appointment"
-            : "course",
+              ? "webinar"
+              : location.state?.appointmenttype
+                ? "appointment"
+                : "course",
         amount: net,
         userId: userId || "guest",
       };
@@ -332,7 +337,8 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-10 px-4">
+    <div className="pt-18 min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-10 px-4">
+
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Checkout</h1>
@@ -345,6 +351,8 @@ export default function CheckoutPage() {
             <div className="bg-white rounded-2xl shadow-md p-8 space-y-6">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">Your Information</h2>
+
+
 
                 {!isLoggedIn ? (
                   <div className="space-y-4">
@@ -431,9 +439,9 @@ export default function CheckoutPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Delivery Address</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Message</label>
                       <textarea
-                        placeholder="Enter your full address"
+                        placeholder="Type Your Message"
                         rows={3}
                         className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition resize-none"
                         value={address.fullAddress}
@@ -512,11 +520,10 @@ export default function CheckoutPage() {
 
               <button
                 onClick={handlePayment}
-                className={`w-full py-4 rounded-lg font-bold text-white transition duration-200 flex items-center justify-center gap-2 ${
-                  loadingPayment
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-green-600 hover:bg-green-700 active:scale-95"
-                }`}
+                className={`w-full py-4 rounded-lg font-bold text-white transition duration-200 flex items-center justify-center gap-2 ${loadingPayment
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-green-600 hover:bg-green-700 active:scale-95"
+                  }`}
                 disabled={loadingPayment}
               >
                 <FaLock className="text-sm" />
@@ -532,4 +539,5 @@ export default function CheckoutPage() {
       </div>
     </div>
   );
+
 }
