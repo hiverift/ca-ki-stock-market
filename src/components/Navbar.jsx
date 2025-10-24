@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect, useCallback } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 
 function Navbar() {
@@ -7,6 +7,7 @@ function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation(); // <- important: triggers on route change
 
   const toggleMenu = () => setIsOpen(!isOpen);
 
@@ -20,39 +21,73 @@ function Navbar() {
     { name: "Appointment", path: "/appointment" },
   ];
 
-  // ✅ Check login status and update whenever loginStatusChanged event fires
-  useEffect(() => {
-    const checkLoginStatus = () => {
-      const token = localStorage.getItem("accessToken");
-      const adminToken = localStorage.getItem("admin");
-      setIsLoggedIn(!!token);
-      setIsAdmin(!!adminToken);
+  // Safe reader of auth info from storage
+  const readAuthFromStorage = useCallback(() => {
+    const token = localStorage.getItem("accessToken");
+    const adminFlag = localStorage.getItem("admin");
+    const userRaw = localStorage.getItem("user");
+    let userRole = null;
+
+    try {
+      if (userRaw) {
+        const parsed = JSON.parse(userRaw);
+        userRole = parsed?.role;
+      }
+    } catch (e) {
+      // ignore parse error
+    }
+
+    return {
+      isLoggedIn: !!token,
+      isAdmin: adminFlag === "true" || userRole === "admin" || !!localStorage.getItem("adminId"),
     };
-
-    checkLoginStatus(); // initial check
-
-    // 👇 Listen for login status changes globally
-    window.addEventListener("loginStatusChanged", checkLoginStatus);
-    return () => window.removeEventListener("loginStatusChanged", checkLoginStatus);
   }, []);
 
-  // ✅ Handle Logout
-  const handleLogout = () => {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-    localStorage.removeItem("user");
-    localStorage.removeItem("userId");
-    localStorage.removeItem("admin");
-    localStorage.removeItem("adminId");
-    localStorage.removeItem("token"); // in case token used for auto-login
+  // Check login status initially, on global event, and on route change
+  useEffect(() => {
+    const checkLoginStatus = () => {
+      const { isLoggedIn, isAdmin } = readAuthFromStorage();
+      setIsLoggedIn(isLoggedIn);
+      setIsAdmin(isAdmin);
+    };
 
-    // 👇 Notify all components that login status changed
+    // initial check
+    checkLoginStatus();
+
+    // listen for app-wide login/logout (dispatch this after login or logout)
+    window.addEventListener("loginStatusChanged", checkLoginStatus);
+
+    // also re-check whenever route changes (so Navbar always shows correct state on any page)
+    checkLoginStatus(); // call once more to be safe for this render
+
+    return () => {
+      window.removeEventListener("loginStatusChanged", checkLoginStatus);
+    };
+  }, [readAuthFromStorage, location]); // location in deps -> runs on route change
+
+  // Universal logout that clears everything
+  const handleLogout = () => {
+    // Clear storages
+    localStorage.clear();
+    sessionStorage.clear();
+
+    // Clear cookies (optional; useful if you set cookies)
+    document.cookie.split(";").forEach((c) => {
+      document.cookie = c
+        .replace(/^ +/, "")
+        .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+    });
+
+    // Notify app
     window.dispatchEvent(new Event("loginStatusChanged"));
 
+    // Update local state and redirect
     setIsLoggedIn(false);
     setIsAdmin(false);
     navigate("/login");
   };
+
+  const showLogout = isLoggedIn && !isAdmin;
 
   return (
     <div className="fixed top-0 left-0 w-full bg-white text-black border-b border-gray-200 z-50 font-sans">
@@ -94,11 +129,8 @@ function Navbar() {
 
             {/* Desktop Buttons */}
             <div className="hidden md:flex items-center space-x-3">
-              {isLoggedIn && !isAdmin ? (
-                <button
-                  onClick={handleLogout}
-                  className="text-red-500 hover:underline"
-                >
+              {showLogout ? (
+                <button onClick={handleLogout} className="text-red-500 hover:underline">
                   Logout
                 </button>
               ) : (
@@ -121,9 +153,7 @@ function Navbar() {
 
             {/* Mobile Menu Toggle */}
             <div className="md:hidden">
-              <button onClick={toggleMenu}>
-                {isOpen ? <X size={28} /> : <Menu size={28} />}
-              </button>
+              <button onClick={toggleMenu}>{isOpen ? <X size={28} /> : <Menu size={28} />}</button>
             </div>
           </div>
 
@@ -146,7 +176,7 @@ function Navbar() {
               ))}
 
               <div className="flex flex-col space-y-2 mt-2">
-                {isLoggedIn && !isAdmin ? (
+                {showLogout ? (
                   <button
                     onClick={() => {
                       handleLogout();
