@@ -47,6 +47,7 @@ function PremiumAppointments() {
           const order = appointmentData.order;
           const user = appointmentData.user?.result;
           const item = appointmentData.item?.result;
+          console.log('hidie',item)
 
           return (
             <div
@@ -94,7 +95,7 @@ function PremiumAppointments() {
                     </div>
                     <div className="flex items-center gap-1">
                       <CurrencyRupeeIcon className="h-5 w-5 text-green-700" />
-                      <span>{item?.price || 0}</span>
+                      <span>{item?.amount || 0}</span>
                     </div>
                   </div>
                   <p className="text-gray-700 text-sm">

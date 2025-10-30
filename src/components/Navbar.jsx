@@ -51,43 +51,37 @@ function Navbar() {
       setIsAdmin(isAdmin);
     };
 
-    // initial check
     checkLoginStatus();
 
-    // listen for app-wide login/logout (dispatch this after login or logout)
     window.addEventListener("loginStatusChanged", checkLoginStatus);
 
-    // also re-check whenever route changes (so Navbar always shows correct state on any page)
-    checkLoginStatus(); // call once more to be safe for this render
+    // route changes also re-check because `location` is in deps
+    checkLoginStatus();
 
     return () => {
       window.removeEventListener("loginStatusChanged", checkLoginStatus);
     };
-  }, [readAuthFromStorage, location]); // location in deps -> runs on route change
+  }, [readAuthFromStorage, location]);
 
-  // Universal logout that clears everything
   const handleLogout = () => {
-    // Clear storages
     localStorage.clear();
     sessionStorage.clear();
 
-    // Clear cookies (optional; useful if you set cookies)
     document.cookie.split(";").forEach((c) => {
       document.cookie = c
         .replace(/^ +/, "")
         .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
     });
 
-    // Notify app
     window.dispatchEvent(new Event("loginStatusChanged"));
 
-    // Update local state and redirect
     setIsLoggedIn(false);
     setIsAdmin(false);
     navigate("/login");
   };
 
-  const showLogout = isLoggedIn && !isAdmin;
+  // when a regular (non-admin) user is logged in
+  const showUserControls = isLoggedIn && !isAdmin;
 
   return (
     <div className="fixed top-0 left-0 w-full bg-white text-black border-b border-gray-200 z-50 font-sans">
@@ -129,10 +123,21 @@ function Navbar() {
 
             {/* Desktop Buttons */}
             <div className="hidden md:flex items-center space-x-3">
-              {showLogout ? (
-                <button onClick={handleLogout} className="text-red-500 hover:underline">
-                  Logout
-                </button>
+              {showUserControls ? (
+                <>
+                  {/* Dashboard button left of Logout */}
+                  <Link
+                    to="/user-dashboard"
+                    className="px-4 py-2 bg-yellow-100 text-black rounded-lg hover:bg-gray-200 transition flex items-center"
+                    aria-label="Go to dashboard"
+                  >
+                     User Dashboard
+                  </Link>
+
+                  <button onClick={handleLogout} className="text-red-500 hover:underline">
+                    Logout
+                  </button>
+                </>
               ) : (
                 <>
                   <Link
@@ -176,16 +181,25 @@ function Navbar() {
               ))}
 
               <div className="flex flex-col space-y-2 mt-2">
-                {showLogout ? (
-                  <button
-                    onClick={() => {
-                      handleLogout();
-                      setIsOpen(false);
-                    }}
-                    className="hover:bg-red-500 text-white px-4 py-2 rounded-lg transition text-center"
-                  >
-                    Logout
-                  </button>
+                {showUserControls ? (
+                  <>
+                    <Link
+                      to="/dashboard"
+                      onClick={() => setIsOpen(false)}
+                      className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-center transition"
+                    >
+                      User Dashboard
+                    </Link>
+                    <button
+                      onClick={() => {
+                        handleLogout();
+                        setIsOpen(false);
+                      }}
+                      className="hover:bg-red-500 text-white px-4 py-2 rounded-lg transition text-center"
+                    >
+                      Logout
+                    </button>
+                  </>
                 ) : (
                   <>
                     <Link

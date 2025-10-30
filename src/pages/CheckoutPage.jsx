@@ -27,17 +27,16 @@ function SafeImg({ src, alt, className }) {
 export default function CheckoutPage() {
   const location = useLocation();
   const navigate = useNavigate();
-
   const [accessToken, setAccessToken] = useState(() => localStorage.getItem("accessToken") || "");
   const [userId, setUserId] = useState(() => localStorage.getItem("userId") || "");
-
+  // alert(userId)
   const item =
     location.state?.course ||
     location.state?.webinar ||
     location.state?.appointment || {
       id: "demo-1",
-      title: "Master React — Complete Guide",
-      description: "Modern React from zero to pro.",
+      title: location.state.title,
+      description: location.state.description,
       price: 1299,
       duration: "9h 12m",
       rating: 4.9,
@@ -53,7 +52,7 @@ export default function CheckoutPage() {
   if (location.state?.price) preparedItem.price = location.state?.price || item.price;
 
   const [step, setStep] = useState("details");
-  const [isLoggedIn, setIsLoggedIn] = useState(!!accessToken);
+  const [isLoggedIn, setIsLoggedIn] = useState(!!userId);
   const [loginData, setLoginData] = useState({ email: "", password: "", role: "user" });
   const [address, setAddress] = useState({
     firstName: "",
@@ -71,7 +70,7 @@ export default function CheckoutPage() {
   const net = Math.max(0, (Number(preparedItem.price) || 0) - (Number(discount) || 0));
   const formattedNet = useMemo(() => formatINR(net), [net]);
   const studentsDisplay = useMemo(() => (preparedItem?.students ?? 0).toLocaleString(), [preparedItem]);
-
+ console.log('item details with product',preparedItem)
   // Load Razorpay script
   useEffect(() => {
     const id = "razorpay-checkout-js";
@@ -125,6 +124,7 @@ export default function CheckoutPage() {
     // Listen to storage changes for instant login update
     const updateLoginStatus = () => {
       const token = localStorage.getItem("accessToken");
+      const userids= localStorage.getItem("userId");
       setIsLoggedIn(!!token);
       if (token) setAccessToken(token);
       else setAccessToken("");
@@ -143,49 +143,58 @@ export default function CheckoutPage() {
     return Object.keys(e).length === 0;
   };
 
-  const handleLogin = async () => {
-    if (!validateLogin()) return;
+const handleLogin = async () => {
+  if (!validateLogin()) return;
 
-    try {
-      const res = await axios.post(`${config.BASE_URL}auth/login`, loginData);
-      const { accessToken, user } = res.data?.result || {};
+  try {
+    const res = await axios.post(`${config.BASE_URL}auth/login`, loginData);
+    // many APIs return tokens inside result or data — adapt if needed
+    const result = res.data?.result || {};
+    const accessToken = result.accessToken || result.access_token || null;
+    const refreshToken = result.refreshToken || result.refresh_token || null;
+    const user = result.user || result.userData || result; // fallbacks
 
-      if (accessToken) {
-        localStorage.setItem("accessToken", accessToken);
-        localStorage.setItem("userId", user._id || "");
-        localStorage.setItem("user", JSON.stringify(user));
-
-        setAccessToken(accessToken);
-        setUserId(user._id || "");
-        setIsLoggedIn(true);
-
-        // ✅ Dispatch event so Navbar updates
-        window.dispatchEvent(new Event("loginStatusChanged"));
-
-
-
-        Swal.fire({
-          icon: "success",
-          title: "Login Successful!",
-          text: `Welcome back, ${user.firstName || "User"}!`,
-          timer: 2500,
-          showConfirmButton: false,
-        });
-
-        setAddress({
-          firstName: user.name || "John",
-          lastName: user.lastName || "Doe",
-          email: user.email || loginData.email,
-          mobile: user.mobile || "",
-          fullAddress: user.address || "",
-        });
-      } else {
-        Swal.fire("Error", "Login failed: Invalid response", "error");
-      }
-    } catch (err) {
-      Swal.fire("Error", "Login failed. Please check credentials.", "error");
+    if (!accessToken) {
+      Swal.fire("Error", "Login failed: Invalid response", "error");
+      return;
     }
-  };
+
+    // store tokens & user safely
+    localStorage.setItem("accessToken", accessToken);
+    if (refreshToken) localStorage.setItem("refreshToken", refreshToken);
+    if (user) localStorage.setItem("user", JSON.stringify(user));
+    if (user && (user._id || user.id)) {
+      localStorage.setItem("userId", user._id || user.id);
+    }
+
+    // update local state so UI switches to logged-in immediately
+    setAccessToken(accessToken);
+    setUserId(user?._id || user?.id || "");
+    setIsLoggedIn(true);
+
+    // notify other parts of the app (some components might listen for this)
+    window.dispatchEvent(new Event("loginStatusChanged"));
+
+    Swal.fire({
+      icon: "success",
+      title: "Login Successful!",
+      text: `Welcome back, ${user?.firstName || user?.name || "User"}!`,
+      timer: 2000,
+      showConfirmButton: false,
+    });
+
+    setAddress({
+      firstName: user?.name || user?.firstName || "John",
+      lastName: user?.lastName || "Doe",
+      email: user?.email || loginData.email,
+      mobile: user?.mobile || "",
+      fullAddress: user?.address || "",
+    });
+  } catch (err) {
+    console.error("Login error:", err);
+    Swal.fire("Error", "Login failed. Please check credentials.", "error");
+  }
+};
 
   // Address Validation
   const validateAddress = () => {
@@ -493,7 +502,7 @@ export default function CheckoutPage() {
               </div>
 
               <div className="flex items-center justify-between text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
-                <span>👥 Students Enrolled</span>
+                <span> Enrolled</span>
                 <span className="font-semibold text-gray-900">{studentsDisplay}</span>
               </div>
 

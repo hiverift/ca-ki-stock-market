@@ -11,7 +11,7 @@ import axios from "axios";
 import Swal from "sweetalert2";
 import config from "./config";
 
-function LoginPage() {
+function AdminLoginPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("email");
   const [formData, setFormData] = useState({
@@ -45,13 +45,13 @@ function LoginPage() {
       const payload =
         activeTab === "email"
           ? {
-            email: formData.email,
-            password: formData.password,
-          }
+              email: formData.email,
+              password: formData.password,
+            }
           : {
-            mobile: formData.mobile,
-            password: formData.password,
-          };
+              mobile: formData.mobile,
+              password: formData.password,
+            };
 
       const response = await axios.post(
         `${config.BASE_URL}auth/login`,
@@ -66,50 +66,24 @@ function LoginPage() {
         return;
       }
 
-      const result = response.data.result || {};
-      const user = result.user;
+      console.log("Admin Login Response:", response.data.result);
 
-      console.log("Login Response:", result);
-
-
-      //  if (user?.role === "admin") {
-      //   localStorage.setItem("admin", user._id);
-      //   localStorage.setItem("adminId", user._id);
-      //   navigate("/admin-dashboard");
-      // }
-
-      // if (user?.role === "user") {
-      //   localStorage.setItem("user", JSON.stringify(user));
-      //   localStorage.setItem("userId", user._id);
-      //   navigate("/user-dashboard");
-      // }
-      // Role-based redirect + storage (based on response.user.role)
-      if (user?.role === "admin") {
-        // keep admin id for quick checks
-        localStorage.setItem("accessToken", result.accessToken)
-        localStorage.setItem("refreshToken", result.refreshToken)
-        localStorage.setItem("admin", user._id);
-        localStorage.setItem("adminId", user._id);
-        localStorage.setItem("user", JSON.stringify(user));
-        navigate("/admin-dashboard");
-      } else if (user?.role === "user") {
-        localStorage.setItem("accessToken", result.accessToken)
-        localStorage.setItem("refreshToken", result.refreshToken)
-        localStorage.setItem("user", JSON.stringify(user));
-        localStorage.setItem("userId", user._id);
-        navigate("/user-dashboard");
-      } else {
-        // If role missing or unknown, fallback to a generic dashboard or show message
-        console.warn("Unknown or missing user.role in login response:", user?.role);
-        navigate("/user-dashboard");
+      // Store tokens & user
+      localStorage.setItem("accessToken", response.data.result?.accessToken);
+      localStorage.setItem("refreshToken", response.data.result?.refreshToken);
+      localStorage.setItem("admin", JSON.stringify(response.data.result?.user));
+      if (response.data.result?.user?._id) {
+        localStorage.setItem("adminId", response.data.result.user._id);
       }
+
+      // Redirect to Admin Dashboard
+      navigate("/admin-dashboard");
     } catch (error) {
       if (error.response)
         Swal.fire(
           "Error",
-          (error.response.data?.message && error.response.data.message[0]) ||
-          error.response.data?.message ||
-          "Login failed",
+          (error.response.data && error.response.data.message) ||
+            "Login failed",
           "error"
         );
       else if (error.request)
@@ -128,15 +102,22 @@ function LoginPage() {
     <div className="flex items-center justify-center min-h-screen bg-gray-50 px-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-6 sm:p-8 lg:p-10">
         <div className="text-center mb-6">
-          <h2 className="text-2xl text-gray-800">Welcome Back</h2>
-          <p className="text-gray-500 text-sm">Sign in to access your dashboard</p>
+          <h2 className="text-2xl text-gray-800 font-semibold">
+            Admin Login
+          </h2>
+          <p className="text-gray-500 text-sm">
+            Sign in to access your admin dashboard
+          </p>
         </div>
 
         <div className="flex rounded-lg bg-gray-100 mb-6">
           <button
             onClick={() => setActiveTab("email")}
-            className={`flex-1 py-2 text-sm rounded-lg ${activeTab === "email" ? "bg-white shadow text-gray-800" : "text-gray-500"
-              }`}
+            className={`flex-1 py-2 text-sm rounded-lg ${
+              activeTab === "email"
+                ? "bg-white shadow text-gray-800"
+                : "text-gray-500"
+            }`}
           >
             <div className="flex items-center justify-center gap-2">
               <EnvelopeIcon className="h-4 w-4" /> Email
@@ -144,8 +125,11 @@ function LoginPage() {
           </button>
           <button
             onClick={() => setActiveTab("mobile")}
-            className={`flex-1 py-2 text-sm rounded-lg ${activeTab === "mobile" ? "bg-white shadow text-gray-800" : "text-gray-500"
-              }`}
+            className={`flex-1 py-2 text-sm rounded-lg ${
+              activeTab === "mobile"
+                ? "bg-white shadow text-gray-800"
+                : "text-gray-500"
+            }`}
           >
             <div className="flex items-center justify-center gap-2">
               <PhoneIcon className="h-4 w-4" /> Mobile
@@ -232,22 +216,9 @@ function LoginPage() {
             {loading ? "Logging in..." : "Sign In"}
           </button>
         </form>
-
-        <div className="border-t my-6"></div>
-
-        <p className="text-center text-sm text-gray-600">
-          New to CA ki Stock Market?{" "}
-          <button
-            type="button"
-            onClick={() => navigate("/signup")}
-            className="text-yellow-600 hover:underline"
-          >
-            Register here
-          </button>
-        </p>
       </div>
     </div>
   );
 }
 
-export default LoginPage;
+export default AdminLoginPage;

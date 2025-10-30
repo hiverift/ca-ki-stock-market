@@ -135,7 +135,8 @@ export default function AppointmentPage() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    setIsAuthenticated(Boolean(token));
+    const userId = localStorage.getItem("userId");
+    setIsAuthenticated(Boolean(userId));
   }, []);
 
   // Automatically show login modal if user reaches Payment step
