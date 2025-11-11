@@ -5,7 +5,7 @@ import Swal from "sweetalert2";
 import { FaCheck, FaLock, FaTag } from "react-icons/fa";
 import config from "./config";
 
-const razorpayKey = "rzp_test_RD67KFzwSW83SE";
+const razorpayKey = "rzp_live_ReNg1FQibGawr8";
 const fallbackThumb = "/fallback-course.png";
 
 function formatINR(v) {
