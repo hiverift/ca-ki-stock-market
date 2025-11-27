@@ -30,61 +30,57 @@ const AdminWebinarTable = () => {
   });
 
   // Fetch webinars from API
- const fetchWebinars = async () => {
-  try {
-    const accessToken = localStorage.getItem("accessToken");
-    if (!accessToken) return setWebinars([]);
+  const fetchWebinars = async () => {
+    try {
+      const accessToken = localStorage.getItem("accessToken");
+      if (!accessToken) return setWebinars([]);
 
-    const res = await fetch(`${config.BASE_URL}webinars`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-    const data = await res.json();
+      const res = await fetch(`${config.BASE_URL}webinars`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const data = await res.json();
 
-    const validWebinars = Array.isArray(data.result)
-      ? data.result.filter((w) => w && w._id)
-      : [];
+      const validWebinars = Array.isArray(data.result)
+        ? data.result.filter((w) => w && w._id)
+        : [];
 
-    setWebinars(validWebinars);
+      setWebinars(validWebinars);
 
-    // ⭐ ADD THIS CODE HERE
-    const visibilityMap = {};
+      // ⭐ ADD THIS CODE HERE
+      const visibilityMap = {};
 
-    await Promise.all(
-      validWebinars.map(async (wb) => {
-        try {
-          const res = await fetch(
-            `${config.BASE_URL}webinars/${wb._id}/orders`,
-            {
-              headers: { Authorization: `Bearer ${accessToken}` },
+      await Promise.all(
+        validWebinars.map(async (wb) => {
+          try {
+            const res = await fetch(
+              `${config.BASE_URL}webinars/${wb._id}/orders`,
+              {
+                headers: { Authorization: `Bearer ${accessToken}` },
+              }
+            );
+
+            if (!res.ok) {
+              visibilityMap[wb._id] = false;
+              return;
             }
-          );
 
-          if (!res.ok) {
+            const ordData = await res.json();
+            const orders = ordData?.result || [];
+
+            visibilityMap[wb._id] = orders.some((o) => o.status === "paid");
+          } catch {
             visibilityMap[wb._id] = false;
-            return;
           }
+        })
+      );
 
-          const ordData = await res.json();
-          const orders = ordData?.result || [];
-
-          visibilityMap[wb._id] = orders.some(
-            (o) => o.status === "paid"
-          );
-        } catch {
-          visibilityMap[wb._id] = false;
-        }
-      })
-    );
-
-    setMeetVisible(visibilityMap);
-    // ⭐ END
-
-  } catch (err) {
-    console.error("Error fetching webinars:", err);
-    setWebinars([]);
-  }
-};
-
+      setMeetVisible(visibilityMap);
+      // ⭐ END
+    } catch (err) {
+      console.error("Error fetching webinars:", err);
+      setWebinars([]);
+    }
+  };
 
   useEffect(() => {
     fetchWebinars();
@@ -339,140 +335,114 @@ const AdminWebinarTable = () => {
 
       {/* Table */}
       <div className="overflow-x-auto bg-white rounded-2xl shadow-lg">
-    <table className="min-w-full divide-y divide-gray-200">
-  <thead className="bg-gray-100">
-    <tr>
-      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-        No.
-      </th>
-      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-        Title
-      </th>
-      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-        Presenter
-      </th>
-      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-        Date
-      </th>
-      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-        Duration
-      </th>
-      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-        Price
-      </th>
-      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-        Status
-      </th>
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                No.
+              </th>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                Title
+              </th>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                Presenter
+              </th>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                Date
+              </th>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                Duration
+              </th>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                Price
+              </th>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                Status
+              </th>
 
-      {/* ✅ Meet Link column */}
-      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-        Meet Link
-      </th>
+              {/* ❌ Meet Link column removed */}
 
-      <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">
-        Actions
-      </th>
-    </tr>
-  </thead>
+              <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">
+                Actions
+              </th>
+            </tr>
+          </thead>
 
-  <tbody className="divide-y divide-gray-200">
-    {webinars.length > 0 ? (
-      webinars.map((w, idx) => (
-        <tr
-          key={w._id}
-          className="hover:bg-yellow-50 transition-all duration-200"
-        >
-          <td className="px-4 py-3">{idx + 1}</td>
-          <td className="px-4 py-3">{w.title || "N/A"}</td>
-          <td className="px-4 py-3">{w.presenter || "N/A"}</td>
-          <td className="px-4 py-3">
-            {w.startDate
-              ? new Date(w.startDate).toLocaleString()
-              : "N/A"}
-          </td>
-          <td className="px-4 py-3">{w.durationMinutes || 0} mins</td>
-          <td className="px-4 py-3">{w.price || 0}</td>
-
-          <td className="px-4 py-3">
-            <span
-              className={`px-2 py-1 rounded-full text-xs ${
-                w.status === "Live"
-                  ? "bg-green-500 text-white"
-                  : w.status === "Upcoming"
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-400 text-white"
-              }`}
-            >
-              {w.status || "N/A"}
-            </span>
-          </td>
-
-          {/* ⭐ FINAL: MEET LINK VISIBLE ONLY IF PAID */}
-          <td className="px-4 py-3">
-            {meetVisible[w._id] ? (
-              w.googleMeetLink ? (
-                <a
-                  href={w.googleMeetLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 underline"
+          <tbody className="divide-y divide-gray-200">
+            {webinars.length > 0 ? (
+              webinars.map((w, idx) => (
+                <tr
+                  key={w._id}
+                  className="hover:bg-yellow-50 transition-all duration-200"
                 >
-                  Open Meet
-                </a>
-              ) : (
-                <span className="text-gray-500 text-sm">
-                  No link
-                </span>
-              )
+                  <td className="px-4 py-3">{idx + 1}</td>
+                  <td className="px-4 py-3">{w.title || "N/A"}</td>
+                  <td className="px-4 py-3">{w.presenter || "N/A"}</td>
+                  <td className="px-4 py-3">
+                    {w.startDate
+                      ? new Date(w.startDate).toLocaleString()
+                      : "N/A"}
+                  </td>
+                  <td className="px-4 py-3">{w.durationMinutes || 0} mins</td>
+                  <td className="px-4 py-3">{w.price || 0}</td>
+
+                  <td className="px-4 py-3">
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs ${
+                        w.status === "Live"
+                          ? "bg-green-500 text-white"
+                          : w.status === "Upcoming"
+                          ? "bg-blue-500 text-white"
+                          : "bg-gray-400 text-white"
+                      }`}
+                    >
+                      {w.status || "N/A"}
+                    </span>
+                  </td>
+
+                  {/* ❌ Meet link <td> removed */}
+
+                  <td className="px-4 py-3 text-center">
+                    <div className="flex justify-center items-center gap-2">
+                      <button
+                        onClick={() => setShowDetail(w)}
+                        className="flex items-center justify-center w-8 h-8 bg-green-500 hover:bg-green-600 text-white rounded"
+                        title="View"
+                      >
+                        <Eye size={16} />
+                      </button>
+
+                      <button
+                        onClick={() => handleEditWebinar(w)}
+                        className="flex items-center justify-center w-8 h-8 bg-blue-500 hover:bg-blue-600 text-white rounded"
+                        title="Edit"
+                      >
+                        <Edit size={16} />
+                      </button>
+
+                      <button
+                        onClick={() => handleDeleteWebinar(w._id)}
+                        className="flex items-center justify-center w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded"
+                        title="Delete"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
             ) : (
-              <span className="text-yellow-700 text-sm">
-                Hidden until paid
-              </span>
+              <tr>
+                <td
+                  colSpan="8"
+                  className="px-4 py-6 text-center text-gray-500 border-t border-gray-200"
+                >
+                  No webinars found
+                </td>
+              </tr>
             )}
-          </td>
-
-          <td className="px-4 py-3 text-center">
-            <div className="flex justify-center items-center gap-2">
-              <button
-                onClick={() => setShowDetail(w)}
-                className="flex items-center justify-center w-8 h-8 bg-green-500 hover:bg-green-600 text-white rounded"
-                title="View"
-              >
-                <Eye size={16} />
-              </button>
-
-              <button
-                onClick={() => handleEditWebinar(w)}
-                className="flex items-center justify-center w-8 h-8 bg-blue-500 hover:bg-blue-600 text-white rounded"
-                title="Edit"
-              >
-                <Edit size={16} />
-              </button>
-
-              <button
-                onClick={() => handleDeleteWebinar(w._id)}
-                className="flex items-center justify-center w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded"
-                title="Delete"
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
-          </td>
-        </tr>
-      ))
-    ) : (
-      <tr>
-        <td
-          colSpan="9"
-          className="px-4 py-6 text-center text-gray-500 border-t border-gray-200"
-        >
-          No webinars found
-        </td>
-      </tr>
-    )}
-  </tbody>
-</table>
-
+          </tbody>
+        </table>
       </div>
 
       {/* View Modal */}

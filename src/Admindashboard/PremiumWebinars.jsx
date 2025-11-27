@@ -16,14 +16,13 @@ function PremiumWebinars() {
         );
 
         if (response.data.result?.items) {
-          console.log("Webinar Response:", response.data.result.items);
           setWebinars(response.data.result.items);
         } else {
           setError("No webinars found");
         }
       } catch (err) {
-        console.error("Error fetching webinars:", err);
-        setError("Something went wrong while fetching webinars");
+        console.error("Error:", err);
+        setError("Error fetching webinars");
       } finally {
         setLoading(false);
       }
@@ -44,39 +43,36 @@ function PremiumWebinars() {
     });
   };
 
-  // 🔥 Auto-detect link function
+  // detect link
   const getLink = (item, keys) => {
+    if (!item) return null;
     for (let key of keys) {
       if (item[key]) return item[key];
     }
     return null;
   };
 
+  const handleCopy = (text) => {
+    navigator.clipboard.writeText(text);
+    alert("Link Copied!");
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-6">
-      <h1 className="text-3xl font-bold text-gray-800 text-center mb-10">
+      <h1 className="text-3xl font-bold text-center mb-10">
         🌐 Premium Webinars (All)
       </h1>
 
-      {loading && (
-        <p className="text-center text-gray-500">Loading webinars...</p>
-      )}
-      {error && (
-        <p className="text-center text-red-500 text-sm font-medium mt-4">
-          {error}
-        </p>
-      )}
-      {!loading && !error && webinars.length === 0 && (
-        <p className="text-center text-gray-500">No premium webinars found.</p>
-      )}
+      {loading && <p className="text-center">Loading...</p>}
+      {error && <p className="text-center text-red-500">{error}</p>}
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
         {webinars.map((webinarData, index) => {
           const order = webinarData.order || {};
           const user = webinarData.user?.result || {};
-          const item = webinarData.item?.result || {};
+          const item = webinarData.item?.result || {}; // <-- backend must return item
 
-          // 🔥 AUTO-DETECT LINKS (multiple possibilities)
+          // Meet Link
           const googleMeetLink = getLink(item, [
             "googleMeetLink",
             "meetLink",
@@ -86,119 +82,94 @@ function PremiumWebinars() {
             "link",
           ]);
 
-          const zoomLink = getLink(item, ["zoomLink", "zoom", "zoom_meeting"]);
-          const courseLink = getLink(item, [
-            "courseLink",
-            "course",
-            "materialLink",
-          ]);
-          const whatsappLink = getLink(item, [
-            "whatsappLink",
-            "whatsapp",
-            "waLink",
-          ]);
+          // same logic as MyAppointment
+          const isPaid =
+            order?.status === "paid" &&
+            order?.payment?.status === "captured";
 
           return (
             <div
               key={index}
-              className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-all p-6 border border-gray-100"
+              className="bg-white rounded-2xl shadow p-6 border border-gray-100"
             >
-              {/* Header */}
-              <div className="flex justify-between items-center mb-3">
-                <span className="bg-blue-100 text-blue-700 text-xs px-3 py-1 rounded-full font-semibold">
+              <div className="flex justify-between mb-3">
+                <span className="bg-blue-100 text-blue-700 text-xs px-3 py-1 rounded-full">
                   Webinar
                 </span>
                 <span className="text-xs text-gray-500">
-                  Purchased: {formatDate(order?.createdAt)}
+                  {formatDate(order?.createdAt)}
                 </span>
               </div>
 
-              {/* Title */}
-              <h2 className="text-lg font-semibold text-gray-800 mb-2">
-                {item.title || "Untitled Webinar"}
+              <h2 className="text-lg font-semibold mb-2">
+                {item?.title || "Untitled Webinar"}
               </h2>
 
-              <div className="text-sm text-gray-600 space-y-3">
-                {/* Webinar Details */}
-                <div className="bg-yellow-50 rounded-lg p-3">
-                  <p className="font-semibold text-yellow-700 mb-1">
-                    📘 Webinar Details:
-                  </p>
+              {/* DETAILS */}
+              <div className="bg-yellow-50 p-3 rounded-lg mb-3 text-sm">
+                <p>
+                  <strong>Date:</strong> {formatDate(item?.startDate)}
+                </p>
+                <p>
+                  <strong>Presenter:</strong> {item?.presenter}
+                </p>
+                <p>
+                  <strong>Duration:</strong> {item?.durationMinutes} mins
+                </p>
+                <p>
+                  <strong>Price:</strong> ₹{item?.price}
+                </p>
+              </div>
 
-                  <p>
-                    <span className="font-semibold">Date:</span>{" "}
-                    {formatDate(item.date)}
-                  </p>
-                  <p>
-                    <span className="font-semibold">Mode:</span>{" "}
-                    {item.mode || "N/A"}
-                  </p>
-                  <p>
-                    <span className="font-semibold">Instructor:</span>{" "}
-                    {item.instructor || "N/A"}
-                  </p>
-                  <p>
-                    <span className="font-semibold">Price:</span> ₹
-                    {item.price || "0"}
-                  </p>
+              {/* ⭐ JOIN MEET BUTTON - SAME AS MYAPPOINTMENT */}
+              {isPaid  ? (
+                <div className="flex items-center gap-3 my-3">
+                  <a
+                    href={googleMeetLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 bg-green-600 text-white rounded text-sm"
+                  >
+                    Join Meet
+                  </a>
 
-                  {/* GOOGLE MEET (TESTING EXAMPLE) */}
-                  {/* <div className="flex items-center space-x-2">
-                    <a
-                      href={
-                        googleMeetLink || "https://meet.google.com/spo-yets-pkq" // 🔥 temporary test link
-                      }
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 underline break-all"
-                    >
-                      {googleMeetLink || "https://meet.google.com/spo-yets-pkq"}
-                    </a>
-                    <button
-                      onClick={() =>
-                        navigator.clipboard.writeText(
-                          googleMeetLink ||
-                            "https://meet.google.com/spo-yets-pkq"
-                        )
-                      }
-                      className="text-xs text-gray-500 hover:text-gray-800"
-                    >
-                      Copy
-                    </button>
-                  </div> */}
+                  <button
+                    onClick={() => handleCopy(googleMeetLink)}
+                    className="px-3 py-2 border rounded text-sm"
+                  >
+                    Copy
+                  </button>
                 </div>
+              ) : (
+                <p className="text-sm text-gray-500">
+                  {googleMeetLink
+                    ? "Payment required to view the link"
+                    : "Meet link not added"}
+                </p>
+              )}
 
-                {/* Order Info */}
-                <div className="border-t pt-3 text-sm text-gray-600">
-                  <p>
-                    <span className="font-semibold">Order ID:</span>{" "}
-                    {order.orderId || "N/A"}
-                  </p>
-                  <p>
-                    <span className="font-semibold">Amount:</span> ₹
-                    {order.amount || "0"}
-                  </p>
-                  <p>
-                    <span className="font-semibold">Status:</span>{" "}
-                    <span
-                      className={
-                        order.status === "paid"
-                          ? "text-green-600 font-semibold"
-                          : "text-red-500"
-                      }
-                    >
-                      {order.status || "N/A"}
-                    </span>
-                  </p>
-                </div>
+              {/* ORDER INFO */}
+              <div className="border-t pt-3 text-sm">
+                <p>
+                  <strong>Order ID:</strong> {order.orderId}
+                </p>
+                <p>
+                  <strong>Amount:</strong> ₹{order.amount}
+                </p>
+                <p>
+                  <strong>Status:</strong>{" "}
+                  <span className="text-green-600 font-semibold">
+                    {order.status}
+                  </span>
+                </p>
+              </div>
 
-                {/* User Info */}
-                <div className="bg-indigo-50 rounded-lg p-3 text-xs text-gray-700">
-                  <p className="font-semibold text-indigo-700">👤 Booked by:</p>
-                  <p>{user.name || "Unknown user"}</p>
-                  <p>{user.email || "No email"}</p>
-                  <p>{user.mobile || "No mobile"}</p>
-                </div>
+              {/* USER */}
+              <div className="mt-3 bg-indigo-50 p-3 rounded text-xs">
+                <p className="font-semibold text-indigo-700">👤 User:</p>
+                <p>{user?.name}</p>
+                <p>{user?.email}</p>
+                <p>{user?.mobile}</p>
               </div>
             </div>
           );

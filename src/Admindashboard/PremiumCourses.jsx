@@ -11,7 +11,9 @@ function PremiumCourses() {
     const fetchCourses = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${config.BASE_URL}orders/admin/paid/courses`);
+        const response = await axios.get(
+          `${config.BASE_URL}orders/admin/paid/courses`
+        );
 
         if (response.data.result?.items) {
           console.log("Courses data:", response.data.result.items);
@@ -30,6 +32,23 @@ function PremiumCourses() {
     fetchCourses();
   }, []);
 
+  const handleCopy = (text) => {
+    navigator.clipboard.writeText(text);
+    alert("Meet link copied!");
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleString("en-IN", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-6">
       <h1 className="text-3xl font-bold text-gray-800 text-center mb-10">
@@ -37,7 +56,11 @@ function PremiumCourses() {
       </h1>
 
       {loading && <p className="text-center text-gray-500">Loading courses...</p>}
-      {error && <p className="text-center text-red-500 text-sm font-medium mt-4">{error}</p>}
+      {error && (
+        <p className="text-center text-red-500 text-sm font-medium mt-4">
+          {error}
+        </p>
+      )}
       {!loading && !error && courses.length === 0 && (
         <p className="text-center text-gray-500">No premium courses found.</p>
       )}
@@ -48,6 +71,18 @@ function PremiumCourses() {
           const user = courseData.user?.result;
           const item = courseData.item?.result;
 
+          // ⭐ Detect Meet Link
+          const meetLink =
+            item?.googleMeetLink ||
+            item?.meetLink ||
+            item?.liveLink ||
+            null;
+
+          // ⭐ Join button only if fully paid
+          const isPaid =
+            order?.status === "paid" &&
+            order?.payment?.status === "captured";
+
           return (
             <div
               key={index}
@@ -56,16 +91,27 @@ function PremiumCourses() {
               {/* Order Info */}
               <div className="border-t pt-3 text-sm text-gray-600">
                 <p>
-                  <span className="font-semibold">Order ID:</span> {order?.orderId || "N/A"}
+                  <span className="font-semibold">Order ID:</span>{" "}
+                  {order?.orderId || "N/A"}
                 </p>
                 <p>
-                  <span className="font-semibold">Amount:</span> ₹{order?.amount || "0"}
+                  <span className="font-semibold">Amount:</span> ₹
+                  {order?.amount || "0"}
                 </p>
                 <p>
                   <span className="font-semibold">Status:</span>{" "}
-                  <span className={`${order?.status === "paid" ? "text-green-600 font-semibold" : "text-red-500"}`}>
+                  <span
+                    className={`${
+                      isPaid ? "text-green-600 font-semibold" : "text-red-500"
+                    }`}
+                  >
                     {order?.status || "N/A"}
                   </span>
+                </p>
+
+                <p>
+                  <span className="font-semibold">Purchased:</span>{" "}
+                  {formatDate(order?.createdAt)}
                 </p>
               </div>
 
@@ -87,6 +133,35 @@ function PremiumCourses() {
                   <p>Mode: {item?.mode || "N/A"}</p>
                 </div>
               )}
+
+              {/* ⭐ JOIN MEET BUTTON (Only if Paid) */}
+              <div className="mt-4">
+                {isPaid ? (
+                  <div className="flex items-center gap-3">
+                    <a
+                      href={meetLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-4 py-2 bg-green-600 text-white rounded text-sm"
+                    >
+                      Join Meet
+                    </a>
+
+                    <button
+                      onClick={() => handleCopy(meetLink)}
+                      className="px-3 py-2 border rounded text-sm"
+                    >
+                      Copy Link
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">
+                    {meetLink
+                      ? "Payment required to view meeting link"
+                      : "Meeting link not added"}
+                  </p>
+                )}
+              </div>
             </div>
           );
         })}

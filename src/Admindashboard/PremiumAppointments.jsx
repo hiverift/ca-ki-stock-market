@@ -1,18 +1,26 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { UserIcon, CalendarIcon, CurrencyRupeeIcon } from "@heroicons/react/24/outline";
-import config from '../pages/config';
+import config from "../pages/config";
 
 function PremiumAppointments() {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const handleCopy = (text) => {
+    navigator.clipboard.writeText(text);
+    alert("Meet Link Copied!");
+  };
+
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${config.BASE_URL}orders/admin/paid/appointments`);
+
+        const response = await axios.get(
+          `${config.BASE_URL}orders/admin/paid/appointments`
+        );
 
         if (response.data.result?.items) {
           setAppointments(response.data.result.items);
@@ -36,10 +44,20 @@ function PremiumAppointments() {
         📅 Premium Appointments
       </h1>
 
-      {loading && <p className="text-center text-gray-500 text-lg">Loading appointments...</p>}
-      {error && <p className="text-center text-red-500 text-lg font-medium mt-4">{error}</p>}
+      {loading && (
+        <p className="text-center text-gray-500 text-lg">
+          Loading appointments...
+        </p>
+      )}
+      {error && (
+        <p className="text-center text-red-500 text-lg font-medium mt-4">
+          {error}
+        </p>
+      )}
       {!loading && !error && appointments.length === 0 && (
-        <p className="text-center text-gray-500 text-lg">No premium appointments found.</p>
+        <p className="text-center text-gray-500 text-lg">
+          No premium appointments found.
+        </p>
       )}
 
       <div className="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-8">
@@ -47,7 +65,18 @@ function PremiumAppointments() {
           const order = appointmentData.order;
           const user = appointmentData.user?.result;
           const item = appointmentData.item?.result;
-          console.log('hidie',item)
+
+          // ⭐ Meet Link
+          const meetLink =
+            item?.googleMeetLink ||
+            item?.meetLink ||
+            item?.zoomLink ||
+            null;
+
+          // ⭐ Fully Paid Check
+          const isPaid =
+            order?.status === "paid" &&
+            order?.payment?.status === "captured";
 
           return (
             <div
@@ -56,12 +85,15 @@ function PremiumAppointments() {
             >
               {/* Order Header */}
               <div className="flex justify-between items-center mb-4">
-                <span className="text-sm font-semibold text-gray-500">Order ID: #{order?.orderId || "N/A"}</span>
+                <span className="text-sm font-semibold text-gray-500">
+                  Order ID: #{order?.orderId || "N/A"}
+                </span>
                 <span
-                  className={`text-xs font-bold px-3 py-1 rounded-full ${order?.status === "paid"
+                  className={`text-xs font-bold px-3 py-1 rounded-full ${
+                    isPaid
                       ? "bg-green-100 text-green-800"
                       : "bg-red-100 text-red-800"
-                    }`}
+                  }`}
                 >
                   {order?.status || "N/A"}
                 </span>
@@ -70,8 +102,12 @@ function PremiumAppointments() {
               {/* Appointment Title */}
               {item && (
                 <div className="mb-4">
-                  <h2 className="text-lg font-semibold text-gray-800">{item?.title || "Appointment"}</h2>
-                  <p className="text-gray-500 text-sm mt-1">Mode: {item?.mode || "N/A"}</p>
+                  <h2 className="text-lg font-semibold text-gray-800">
+                    {item?.title || "Appointment"}
+                  </h2>
+                  <p className="text-gray-500 text-sm mt-1">
+                    Mode: {item?.mode || "N/A"}
+                  </p>
                 </div>
               )}
 
@@ -87,7 +123,7 @@ function PremiumAppointments() {
 
               {/* Appointment Details */}
               {item && (
-                <div className="bg-green-50 p-3 rounded-xl">
+                <div className="bg-green-50 p-3 rounded-xl mb-4">
                   <div className="flex items-center justify-between text-gray-700 text-sm mb-2">
                     <div className="flex items-center gap-1">
                       <CalendarIcon className="h-5 w-5 text-green-700" />
@@ -99,10 +135,40 @@ function PremiumAppointments() {
                     </div>
                   </div>
                   <p className="text-gray-700 text-sm">
-                    <span className="font-semibold">Instructor/Doctor:</span> {item?.instructor || "N/A"}
+                    <span className="font-semibold">Instructor:</span>{" "}
+                    {item?.instructor || "N/A"}
                   </p>
                 </div>
               )}
+
+              {/* ⭐ JOIN MEET SECTION */}
+              <div className="mt-4">
+                {isPaid ? (
+                  <div className="flex items-center gap-3">
+                    <a
+                      href={meetLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-4 py-2 bg-green-600 text-white rounded text-sm"
+                    >
+                      Join Meet
+                    </a>
+
+                    <button
+                      onClick={() => handleCopy(meetLink)}
+                      className="px-3 py-2 border rounded text-sm"
+                    >
+                      Copy Link
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">
+                    {meetLink
+                      ? "Payment required to view meeting link"
+                      : "Meeting link not added"}
+                  </p>
+                )}
+              </div>
             </div>
           );
         })}

@@ -29,6 +29,7 @@ const MyAppointment = () => {
         });
 
         const data = await res.json();
+        console.log("Appointments Data:", data);
 
         if (data.statusCode === 200 && data.result) {
           const paidAppointments = data.result.appointments
@@ -37,8 +38,10 @@ const MyAppointment = () => {
               latestOrder: a.orders?.[a.orders.length - 1] || null,
               itemType: "appointment",
             }))
-            .filter((a) => a.latestOrder?.status === "paid"); // only paid
-
+            .filter((a) => 
+              
+              a.latestOrder?.payment.status); // only paid
+            
           setAppointments(paidAppointments);
         } else {
           setAppointments([]);
@@ -71,7 +74,7 @@ const MyAppointment = () => {
       </div>
     );
   }
-
+  //  console.log('Appointment in filter:', appointments[0]);
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 space-y-6 md:ml-64">
       <h1 className="text-2xl font-bold mb-6">My Appointments</h1>
@@ -134,8 +137,7 @@ const MyAppointment = () => {
 
             {/* Meet Link Section */}
             <div className="mt-4 flex items-center gap-3">
-              {appointment.latestOrder?.status === "paid" &&
-              appointment.googleMeetLink ? (
+              {appointment.latestOrder?.payment.status === "captured"  ? (
                 <>
                   <a
                     href={appointment.googleMeetLink}

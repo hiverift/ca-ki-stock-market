@@ -12,60 +12,80 @@ const MyCourses = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-useEffect(() => {
-  const fetchEnrolledCourses = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem("accessToken");
-      const userId = localStorage.getItem("userId") || "";
-
-      const res = await fetch(`${config.BASE_URL}users/${userId}/assets`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      const data = await res.json();
-      console.log("API Response:", data);
-
-      if (data.statusCode === 200 && data.result) {
-        
-        // 👉 Only PAID courses
-        const courses = data.result.courses.flatMap((c) => {
-          return c.orders
-            .filter((order) => order.status === "paid") // ✔ Only paid orders
-            .map((order) => ({
-              ...c.details,
-              itemType: "course",
-              paid: true,
-              order,
-            }));
-        });
-
-        console.log("Paid Courses:", courses);
-        setEnrolledCourses(courses);
-      } else {
-        setEnrolledCourses([]);
-      }
-
-    } catch (error) {
-      console.error("Error fetching enrolled courses:", error);
-      Swal.fire({
-        icon: "error",
-        title: "Oops...",
-        text: "Failed to load your enrolled courses!",
-      });
-      setEnrolledCourses([]);
-    } finally {
-      setLoading(false);
-    }
+  // ⭐ Copy Link Handler
+  const handleCopy = (text) => {
+    navigator.clipboard.writeText(text);
+    Swal.fire({
+      icon: "success",
+      title: "Copied!",
+      text: "Meeting link copied to clipboard",
+      timer: 1200,
+      showConfirmButton: false,
+    });
   };
 
-  fetchEnrolledCourses();
-}, []);
+  useEffect(() => {
+    const fetchEnrolledCourses = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem("accessToken");
+        const userId = localStorage.getItem("userId") || "";
 
+        const res = await fetch(`${config.BASE_URL}users/${userId}/assets`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
 
+        const data = await res.json();
+        console.log("API Response:", data);
+
+        if (data.statusCode === 200 && data.result) {
+          // ⭐ FILTER ONLY PAID COURSES
+          const paidCourses = data.result.courses.flatMap((course) => {
+            const paidOrder = course.orders.find(
+              (o) => o.status === "paid" || o.payment?.status === "captured"
+            );
+
+            if (!paidOrder) return []; // ❌ not paid → skip
+
+            const meetLink =
+              course.details.googleMeetLink ||
+              course.details.liveLink ||
+              course.details.meetLink ||
+              null;
+
+            return [
+              {
+                ...course.details,
+                paid: true,
+                order: paidOrder,
+                meetLink: meetLink,
+              },
+            ];
+          });
+
+          console.log("Filtered Paid Courses:", paidCourses);
+          setEnrolledCourses(paidCourses);
+        } else {
+          setEnrolledCourses([]);
+        }
+      } catch (error) {
+        console.error("Error fetching enrolled courses:", error);
+        Swal.fire({
+          icon: "error",
+          title: "Oops...",
+          text: "Failed to load your enrolled courses!",
+        });
+        setEnrolledCourses([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEnrolledCourses();
+  }, []);
 
   const handleCourseClick = (course) => {
     navigate("/course-details", { state: { item: course } });
@@ -99,26 +119,9 @@ useEffect(() => {
         {enrolledCourses.map((course, idx) => (
           <div
             key={course._id + idx}
-            className="rounded-xl shadow-md hover:shadow-xl transition transform hover:-translate-y-1 overflow-hidden flex flex-col cursor-pointer"
+            className="rounded-xl shadow-md hover:shadow-xl transition transform hover:-translate-y-1 overflow-hidden flex flex-col"
           >
             <div className="relative">
-              {/* {course.youtubeVideoId ? (
-              <iframe
-                width="100%"
-                height="200"
-                src={`https://www.youtube.com/embed/${course.youtubeVideoId}`}
-                className="w-full h-36 sm:h-44 object-cover"
-                allowFullScreen
-              ></iframe>
-            ) : (
-              <img
-                src={course.image || cardImage}
-                alt={course.title}
-                className="w-full h-36 sm:h-44 object-cover"
-                onError={(e) => (e.target.src = cardImage)}
-              />
-            )} */}
-
               <div className="w-full h-40 sm:h-48 overflow-hidden rounded-t-xl">
                 <img
                   src={course.image || cardImage}
@@ -141,16 +144,18 @@ useEffect(() => {
 
             <div className="flex-1 flex flex-col justify-between p-3">
               <div>
-                <h3 className="text-lg text-gray-900 font-semibold leading-tight">
-                  {course.title || "No Title"}
+                <h3 className="text-lg text-gray-900 font-semibold leading-tight cursor-pointer"
+                  onClick={() => handleCourseClick(course)}
+                >
+                  {course.title}
                 </h3>
 
                 <p className="text-sm text-gray-600 mb-2">
-                  {course.instructor || "Unknown"}
+                  {course.instructor}
                 </p>
 
                 <p className="text-gray-700 text-sm leading-snug line-clamp-2 mb-3">
-                  {course.description || "No description available."}
+                  {course.description}
                 </p>
 
                 <div className="flex gap-4 flex-wrap items-center text-xs text-gray-500 mb-3">
@@ -173,19 +178,20 @@ useEffect(() => {
                           key={idx2}
                           size={12}
                           className={
-                            idx2 < Math.round(course.rating || 0)
+                            idx2 < Math.round(course.rating)
                               ? "text-yellow-400"
                               : "text-gray-300"
                           }
                         />
                       ))}
                       <span className="ml-1 text-gray-500">
-                        {course.rating || 0}
+                        {course.rating}
                       </span>
                     </span>
                   )}
                 </div>
 
+                {/* ⭐ ORDER DETAILS */}
                 {course.order && (
                   <div className="bg-gray-50 border rounded p-2 text-xs text-gray-600 mb-2">
                     <p>
@@ -196,14 +202,8 @@ useEffect(() => {
                       {(course.order.amount / 100).toLocaleString("en-IN")}
                     </p>
                     <p>
-                      <strong>Status:</strong>
-                      <span
-                        className={`${
-                          course.order.status === "paid"
-                            ? "text-green-600"
-                            : "text-red-600"
-                        } font-medium`}
-                      >
+                      <strong>Status:</strong>{" "}
+                      <span className="text-green-600 font-medium">
                         {course.order.status}
                       </span>
                     </p>
@@ -213,6 +213,33 @@ useEffect(() => {
                     </p>
                   </div>
                 )}
+
+                {/* ⭐ MEETING LINK (Only When Paid) */}
+                <div className="mt-3">
+                  {course.meetLink ? (
+                    <div className="flex items-center gap-3">
+                      <a
+                        href={course.meetLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-4 py-2 bg-green-600 text-white rounded text-sm"
+                      >
+                        Join Meet
+                      </a>
+
+                      <button
+                        onClick={() => handleCopy(course.meetLink)}
+                        className="px-3 py-2 border rounded text-sm"
+                      >
+                        Copy Link
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">
+                      Meeting link will show after payment
+                    </p>
+                  )}
+                </div>
               </div>
 
               <div className="flex items-center justify-between mt-2">
