@@ -12,6 +12,8 @@ export default function CourseHero() {
   const [filteredCourses, setFilteredCourses] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState({});
+
   const navigate = useNavigate();
 
   // Mock user enrollment/subscription status (replace with actual logic)
@@ -21,7 +23,8 @@ export default function CourseHero() {
   });
 
   function extractYoutubeID(url) {
-    const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/ ]{11})/;
+    const regex =
+      /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/ ]{11})/;
     const match = url.match(regex);
     return match ? match[1] : null;
   }
@@ -32,8 +35,12 @@ export default function CourseHero() {
       try {
         const res = await fetch(`${config.BASE_URL}courses/getAllCourses`);
         const data = await res.json();
-        const liveCourses = data.result.filter((course) => course.mode === "Live");
-        const recordedCourses = data.result.filter((course) => course.mode === "Recorded");
+        const liveCourses = data.result.filter(
+          (course) => course.mode === "Live"
+        );
+        const recordedCourses = data.result.filter(
+          (course) => course.mode === "Recorded"
+        );
 
         setCoursesData({
           live: liveCourses,
@@ -73,7 +80,6 @@ export default function CourseHero() {
         <p className="text-gray-600">Loading courses...</p>
       </div>
     );
-    
   }
 
   return (
@@ -104,7 +110,9 @@ export default function CourseHero() {
         <button
           onClick={() => setActiveTab("live")}
           className={`px-4 py-2 rounded-lg text-sm font-medium ${
-            activeTab === "live" ? "bg-yellow-400 text-black" : "bg-gray-100 text-gray-600"
+            activeTab === "live"
+              ? "bg-yellow-400 text-black"
+              : "bg-gray-100 text-gray-600"
           }`}
         >
           Live Courses
@@ -112,7 +120,9 @@ export default function CourseHero() {
         <button
           onClick={() => setActiveTab("recorded")}
           className={`px-4 py-2 rounded-lg text-sm font-medium ${
-            activeTab === "recorded" ? "bg-yellow-400 text-black" : "bg-gray-100 text-gray-600"
+            activeTab === "recorded"
+              ? "bg-yellow-400 text-black"
+              : "bg-gray-100 text-gray-600"
           }`}
         >
           Recorded Courses
@@ -128,43 +138,27 @@ export default function CourseHero() {
           >
             {/* Video Embed */}
             <div className="relative">
-              {user.isEnrolled || user.isSubscribed ? (
-                // Show video if enrolled or subscribed
-                course.youtubeVideoId ? (
-                  <iframe
-                    className="w-full h-36 sm:h-44 object-cover"
-                    src={`https://www.youtube.com/embed/${course.youtubeVideoId}`}
-                    title={course.title}
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  ></iframe>
-                ) : (
-                  <img
-                    src={course.image || cardImage}
-                    alt={course.title}
-                    className="w-full h-36 sm:h-44 object-cover"
-                  />
-                )
-              ) : (
-                // Show locked overlay with video thumbnail or image
-                <div className="relative w-full h-36 sm:h-44">
-                  <img
-                    src={
-                      course.youtubeVideoId
-                        ? `https://img.youtube.com/vi/${course.youtubeVideoId}/hqdefault.jpg`
-                        : course.image || cardImage
-                    }
-                    alt={course.title}
-                    className="w-full h-full object-cover opacity-50" // Dim the image
-                  />
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <FaLock className="text-white text-3xl" />
-                    <p className="text-black font-bold text-sm mt-2">Enroll or Subscribe to Unlock</p>
-                   
-                  </div>
-                </div>
-              )}
+         <div className="relative w-full h-36 sm:h-44">
+  <img
+    src={
+      course.image ||
+      (course.youtubeVideoId
+        ? `https://img.youtube.com/vi/${course.youtubeVideoId}/hqdefault.jpg`
+        : cardImage)
+    }
+    alt={course.title}
+    className="w-full h-full object-cover"
+  />
+
+  <span className="absolute top-2 left-2 bg-yellow-400 text-xs px-2 py-1 rounded">
+    {activeTab === "recorded" ? "Self-Paced" : "Live Course"}
+  </span>
+
+  <span className="absolute top-2 right-2 bg-black text-white text-xs px-2 py-1 rounded">
+    {course.level || "Beginner"}
+  </span>
+</div>
+
 
               <span className="absolute top-2 left-2 bg-yellow-400 text-xs px-2 py-1 rounded">
                 {activeTab === "recorded" ? "Self-Paced" : "Live Course"}
@@ -178,12 +172,34 @@ export default function CourseHero() {
             <div className="flex-1 flex flex-col justify-between">
               <div>
                 <div className="mt-3 px-3">
-                  <h3 className="text-lg text-gray-900 leading-tight">{course.title}</h3>
-                  <p className="text-sm text-gray-600">by {course.instructor || "Unknown"}</p>
+                  <h3 className="text-lg text-gray-900 leading-tight">
+                    {course.title}
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    by {course.instructor || "Unknown"}
+                  </p>
                 </div>
-                <p className="text-gray-700 text-sm mt-2 px-3 leading-snug line-clamp-2">
-                  {course.description}
+                <p className="text-gray-700 text-sm mt-2 px-3 leading-snug">
+                  {expanded[course._id]
+                    ? course.description
+                    : course.description?.slice(0, 80) +
+                      (course.description?.length > 80 ? "..." : "")}
+
+                  {course.description?.length > 80 && (
+                    <button
+                      className="text-blue-600 ml-2 text-xs underline"
+                      onClick={() =>
+                        setExpanded((prev) => ({
+                          ...prev,
+                          [course._id]: !prev[course._id],
+                        }))
+                      }
+                    >
+                      {expanded[course._id] ? "Show less" : "Read more"}
+                    </button>
+                  )}
                 </p>
+
                 <div className="flex gap-4 flex-wrap items-center text-xs text-gray-500 mt-2 px-3">
                   <span className="flex items-center gap-1">
                     <FaRegClock /> {course.duration || "N/A"}

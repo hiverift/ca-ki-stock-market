@@ -44,11 +44,31 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
   };
 
   const menuItems = [
-    { name: "Dashboard", icon: <HomeIcon className="h-5 w-5" />, path: "/user-dashboard" },
-    { name: "My Courses", icon: <BookOpenIcon className="h-5 w-5" />, path: "/user-dashboard/my-courses" },
-    { name: "My Appointment", icon: <ChatBubbleBottomCenterIcon className="h-5 w-5" />, path: "/user-dashboard/my-consultations" },
-    { name: "My Webinars", icon: <PresentationChartLineIcon className="h-5 w-5" />, path: "/user-dashboard/my-webinars" },
-    { name: "KYC Submit", icon: <PresentationChartLineIcon className="h-5 w-5" />, path: "/user-dashboard/profile-kyc" },
+    {
+      name: "Dashboard",
+      icon: <HomeIcon className="h-5 w-5" />,
+      path: "/user-dashboard",
+    },
+    {
+      name: "My Courses",
+      icon: <BookOpenIcon className="h-5 w-5" />,
+      path: "/user-dashboard/my-courses",
+    },
+    {
+      name: "My Appointment",
+      icon: <ChatBubbleBottomCenterIcon className="h-5 w-5" />,
+      path: "/user-dashboard/my-consultations",
+    },
+    {
+      name: "My Webinars",
+      icon: <PresentationChartLineIcon className="h-5 w-5" />,
+      path: "/user-dashboard/my-webinars",
+    },
+    {
+      name: "KYC Submit",
+      icon: <PresentationChartLineIcon className="h-5 w-5" />,
+      path: "/user-dashboard/profile-kyc",
+    },
   ];
 
   return (
@@ -60,15 +80,23 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
           className="p-2 bg-yellow-400 rounded-md text-white shadow-md"
           aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
         >
-          {isOpen ? <XMarkIcon className="h-6 w-6" /> : <Bars3Icon className="h-6 w-6" />}
+          {isOpen ? (
+            <XMarkIcon className="h-6 w-6" />
+          ) : (
+            <Bars3Icon className="h-6 w-6" />
+          )}
         </button>
       </div>
 
       {/* Sidebar */}
       <div
-        className={`fixed top-0 left-0 h-screen bg-white shadow-md z-40 transform transition-transform duration-300
-        ${isOpen ? "translate-x-0" : "-translate-x-full"} 
-        md:translate-x-0 md:w-64 w-64 flex flex-col py-6 px-4`}
+        className={`fixed top-0 left-0 h-screen bg-white shadow-md z-40 
+  w-64 flex flex-col py-6 px-4
+  transform 
+  ${isOpen ? "translate-x-0" : "-translate-x-full"} 
+  md:translate-x-0
+  md:transform-none  /* ← IMPORTANT: No animation on desktop */
+  transition-transform duration-300 md:duration-0`}
       >
         <div className="flex-1 overflow-y-auto">
           <h1

@@ -21,17 +21,27 @@ function formatINR(v) {
 
 function SafeImg({ src, alt, className }) {
   const [s, setS] = useState(src || fallbackThumb);
-  return <img src={s} alt={alt} className={className} onError={() => setS(fallbackThumb)} />;
+  return (
+    <img
+      src={s}
+      alt={alt}
+      className={className}
+      onError={() => setS(fallbackThumb)}
+    />
+  );
 }
 
 export default function CheckoutPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [accessToken, setAccessToken] = useState(() => localStorage.getItem("accessToken") || "");
-  const [userId, setUserId] = useState(() => localStorage.getItem("userId") || "");
+  const [accessToken, setAccessToken] = useState(
+    () => localStorage.getItem("accessToken") || ""
+  );
+  const [userId, setUserId] = useState(
+    () => localStorage.getItem("userId") || ""
+  );
   // alert(userId)
-  const item =
-    location.state?.course ||
+  const item = location.state?.course ||
     location.state?.webinar ||
     location.state?.appointment || {
       id: "demo-1",
@@ -46,14 +56,20 @@ export default function CheckoutPage() {
 
   const preparedItem = { ...item };
   if (location.state?.coursetype) preparedItem.courseId = item._id || item.id;
-  else if (location.state?.webinartype) preparedItem.webinarId = item._id || item.id;
+  else if (location.state?.webinartype)
+    preparedItem.webinarId = item._id || item.id;
   else if (location.state?.appointmenttype)
     preparedItem.appointmentId = location.state?.appointmentId || item.id;
-  if (location.state?.price) preparedItem.price = location.state?.price || item.price;
+  if (location.state?.price)
+    preparedItem.price = location.state?.price || item.price;
 
   const [step, setStep] = useState("details");
   const [isLoggedIn, setIsLoggedIn] = useState(!!userId);
-  const [loginData, setLoginData] = useState({ email: "", password: "", role: "user" });
+  const [loginData, setLoginData] = useState({
+    email: "",
+    password: "",
+    role: "user",
+  });
   const [address, setAddress] = useState({
     firstName: "",
     lastName: "",
@@ -67,10 +83,16 @@ export default function CheckoutPage() {
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [errors, setErrors] = useState({});
 
-  const net = Math.max(0, (Number(preparedItem.price) || 0) - (Number(discount) || 0));
+  const net = Math.max(
+    0,
+    (Number(preparedItem.price) || 0) - (Number(discount) || 0)
+  );
   const formattedNet = useMemo(() => formatINR(net), [net]);
-  const studentsDisplay = useMemo(() => (preparedItem?.students ?? 0).toLocaleString(), [preparedItem]);
- console.log('item details with product',preparedItem)
+  const studentsDisplay = useMemo(
+    () => (preparedItem?.students ?? 0).toLocaleString(),
+    [preparedItem]
+  );
+  console.log("item details with product", preparedItem);
   // Load Razorpay script
   useEffect(() => {
     const id = "razorpay-checkout-js";
@@ -124,7 +146,7 @@ export default function CheckoutPage() {
     // Listen to storage changes for instant login update
     const updateLoginStatus = () => {
       const token = localStorage.getItem("accessToken");
-      const userids= localStorage.getItem("userId");
+      const userids = localStorage.getItem("userId");
       setIsLoggedIn(!!token);
       if (token) setAccessToken(token);
       else setAccessToken("");
@@ -137,72 +159,76 @@ export default function CheckoutPage() {
   // Login Handler
   const validateLogin = () => {
     const e = {};
-    if (!loginData.email || !/^\S+@\S+\.\S+$/.test(loginData.email)) e.email = "Invalid email";
-    if (!loginData.password || loginData.password.length < 6) e.password = "Min 6 chars";
+    if (!loginData.email || !/^\S+@\S+\.\S+$/.test(loginData.email))
+      e.email = "Invalid email";
+    if (!loginData.password || loginData.password.length < 6)
+      e.password = "Min 6 chars";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
-const handleLogin = async () => {
-  if (!validateLogin()) return;
+  const handleLogin = async () => {
+    if (!validateLogin()) return;
 
-  try {
-    const res = await axios.post(`${config.BASE_URL}auth/login`, loginData);
-    // many APIs return tokens inside result or data — adapt if needed
-    const result = res.data?.result || {};
-    const accessToken = result.accessToken || result.access_token || null;
-    const refreshToken = result.refreshToken || result.refresh_token || null;
-    const user = result.user || result.userData || result; // fallbacks
+    try {
+      const res = await axios.post(`${config.BASE_URL}auth/login`, loginData);
+      // many APIs return tokens inside result or data — adapt if needed
+      const result = res.data?.result || {};
+      const accessToken = result.accessToken || result.access_token || null;
+      const refreshToken = result.refreshToken || result.refresh_token || null;
+      const user = result.user || result.userData || result; // fallbacks
 
-    if (!accessToken) {
-      Swal.fire("Error", "Login failed: Invalid response", "error");
-      return;
+      if (!accessToken) {
+        Swal.fire("Error", "Login failed: Invalid response", "error");
+        return;
+      }
+
+      // store tokens & user safely
+      localStorage.setItem("accessToken", accessToken);
+      if (refreshToken) localStorage.setItem("refreshToken", refreshToken);
+      if (user) localStorage.setItem("user", JSON.stringify(user));
+      if (user && (user._id || user.id)) {
+        localStorage.setItem("userId", user._id || user.id);
+      }
+
+      // update local state so UI switches to logged-in immediately
+      setAccessToken(accessToken);
+      setUserId(user?._id || user?.id || "");
+      setIsLoggedIn(true);
+
+      // notify other parts of the app (some components might listen for this)
+      window.dispatchEvent(new Event("loginStatusChanged"));
+
+      Swal.fire({
+        icon: "success",
+        title: "Login Successful!",
+        text: `Welcome back, ${user?.firstName || user?.name || "User"}!`,
+        timer: 2000,
+        showConfirmButton: false,
+      });
+
+      setAddress({
+        firstName: user?.name || user?.firstName || "John",
+        lastName: user?.lastName || "Doe",
+        email: user?.email || loginData.email,
+        mobile: user?.mobile || "",
+        fullAddress: user?.address || "",
+      });
+    } catch (err) {
+      console.error("Login error:", err);
+      Swal.fire("Error", "Login failed. Please check credentials.", "error");
     }
-
-    // store tokens & user safely
-    localStorage.setItem("accessToken", accessToken);
-    if (refreshToken) localStorage.setItem("refreshToken", refreshToken);
-    if (user) localStorage.setItem("user", JSON.stringify(user));
-    if (user && (user._id || user.id)) {
-      localStorage.setItem("userId", user._id || user.id);
-    }
-
-    // update local state so UI switches to logged-in immediately
-    setAccessToken(accessToken);
-    setUserId(user?._id || user?.id || "");
-    setIsLoggedIn(true);
-
-    // notify other parts of the app (some components might listen for this)
-    window.dispatchEvent(new Event("loginStatusChanged"));
-
-    Swal.fire({
-      icon: "success",
-      title: "Login Successful!",
-      text: `Welcome back, ${user?.firstName || user?.name || "User"}!`,
-      timer: 2000,
-      showConfirmButton: false,
-    });
-
-    setAddress({
-      firstName: user?.name || user?.firstName || "John",
-      lastName: user?.lastName || "Doe",
-      email: user?.email || loginData.email,
-      mobile: user?.mobile || "",
-      fullAddress: user?.address || "",
-    });
-  } catch (err) {
-    console.error("Login error:", err);
-    Swal.fire("Error", "Login failed. Please check credentials.", "error");
-  }
-};
+  };
 
   // Address Validation
   const validateAddress = () => {
     const e = {};
     if (!address.firstName) e.firstName = "Required";
     if (!address.lastName) e.lastName = "Required";
-    if (!address.email || !/^\S+@\S+\.\S+$/.test(address.email)) e.email = "Invalid email";
-    if (!address.mobile || !/^\d{7,15}$/.test(address.mobile)) e.mobile = "Invalid phone";
+    if (!address.email || !/^\S+@\S+\.\S+$/.test(address.email))
+      e.email = "Invalid email";
+    if (!address.mobile || !/^\d{7,15}$/.test(address.mobile))
+      e.mobile = "Invalid phone";
     // if (!address.fullAddress) e.fullAddress = "Required";
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -216,10 +242,18 @@ const handleLogin = async () => {
       const res = await axios.post(
         `${config.BASE_URL}coupon/apply`,
         { code: coupon },
-        { headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {} }
+        {
+          headers: accessToken
+            ? { Authorization: `Bearer ${accessToken}` }
+            : {},
+        }
       );
       setDiscount(res.data.discount || 0);
-      Swal.fire("Success", `Coupon applied: ₹${res.data.discount || 0} off`, "success");
+      Swal.fire(
+        "Success",
+        `Coupon applied: ₹${res.data.discount || 0} off`,
+        "success"
+      );
     } catch {
       Swal.fire("Error", "Invalid coupon code", "error");
     }
@@ -240,21 +274,26 @@ const handleLogin = async () => {
         webinarId: preparedItem.webinarId,
         courseId: preparedItem.courseId,
         appointmentId: preparedItem.appointmentId,
-        itemType:
-          location.state?.coursetype
-            ? "course"
-            : location.state?.webinartype
-              ? "webinar"
-              : location.state?.appointmenttype
-                ? "appointment"
-                : "course",
+        itemType: location.state?.coursetype
+          ? "course"
+          : location.state?.webinartype
+          ? "webinar"
+          : location.state?.appointmenttype
+          ? "appointment"
+          : "course",
         amount: net,
         userId: userId || "guest",
       };
 
-      const createRes = await axios.post(`${config.BASE_URL}orders`, createPayload, {
-        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
-      });
+      const createRes = await axios.post(
+        `${config.BASE_URL}orders`,
+        createPayload,
+        {
+          headers: accessToken
+            ? { Authorization: `Bearer ${accessToken}` }
+            : {},
+        }
+      );
 
       const createData = createRes?.data || {};
       const ordReceipt = createData?.result?.order?.orderId || "ord-temp";
@@ -263,7 +302,11 @@ const handleLogin = async () => {
       const payRes = await axios.post(
         `${config.BASE_URL}orders/${ordReceipt}/pay`,
         { amount: ordAmount },
-        { headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {} }
+        {
+          headers: accessToken
+            ? { Authorization: `Bearer ${accessToken}` }
+            : {},
+        }
       );
 
       const payData = payRes?.data || {};
@@ -301,7 +344,11 @@ const handleLogin = async () => {
                 razorpay_signature: resp.razorpay_signature,
                 amount: rOrder.amount,
               },
-              { headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {} }
+              {
+                headers: accessToken
+                  ? { Authorization: `Bearer ${accessToken}` }
+                  : {},
+              }
             );
             Swal.fire("Success", "Payment Successful!", "success");
             setStep("success");
@@ -331,9 +378,15 @@ const handleLogin = async () => {
           <div className="mb-6 inline-block p-4 bg-green-100 rounded-full">
             <FaCheck className="text-4xl text-green-600" />
           </div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">Payment Successful!</h2>
-          <p className="text-gray-600 mb-2">You have successfully enrolled in</p>
-          <p className="text-lg font-semibold text-green-700 mb-6">{preparedItem.title}</p>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">
+            Payment Successful!
+          </h2>
+          <p className="text-gray-600 mb-2">
+            You have successfully enrolled in
+          </p>
+          <p className="text-lg font-semibold text-green-700 mb-6">
+            {preparedItem.title}
+          </p>
           <button
             onClick={() => navigate("/user-dashboard")}
             className="inline-block bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-semibold transition duration-200"
@@ -347,7 +400,6 @@ const handleLogin = async () => {
 
   return (
     <div className="pt-18 min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-10 px-4">
-
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Checkout</h1>
@@ -359,34 +411,53 @@ const handleLogin = async () => {
           <div className="flex-1">
             <div className="bg-white rounded-2xl shadow-md p-8 space-y-6">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Your Information</h2>
-
-
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                  Your Information
+                </h2>
 
                 {!isLoggedIn ? (
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Email Address
+                      </label>
                       <input
                         type="email"
                         placeholder="Enter your email"
                         className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
                         value={loginData.email}
-                        onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
+                        onChange={(e) =>
+                          setLoginData({ ...loginData, email: e.target.value })
+                        }
                       />
-                      {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+                      {errors.email && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.email}
+                        </p>
+                      )}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Password
+                      </label>
                       <input
                         type="password"
                         placeholder="Enter your password"
                         className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
                         value={loginData.password}
-                        onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                        onChange={(e) =>
+                          setLoginData({
+                            ...loginData,
+                            password: e.target.value,
+                          })
+                        }
                       />
-                      {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
+                      {errors.password && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.password}
+                        </p>
+                      )}
                     </div>
 
                     <button
@@ -395,68 +466,122 @@ const handleLogin = async () => {
                     >
                       Sign In
                     </button>
+
+                    {/* 🟡 SIGN UP BUTTON */}
+                    <button
+                      onClick={() => navigate("/signup")}
+                      className="w-full bg-gray-100 hover:bg-gray-200 active:scale-95 text-gray-800 font-semibold py-3 rounded-lg transition duration-200"
+                    >
+                     SignUp
+                    </button>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          First Name
+                        </label>
                         <input
                           type="text"
                           placeholder="First name"
                           className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
                           value={address.firstName}
-                          onChange={(e) => setAddress({ ...address, firstName: e.target.value })}
+                          onChange={(e) =>
+                            setAddress({
+                              ...address,
+                              firstName: e.target.value,
+                            })
+                          }
                         />
-                        {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>}
+                        {errors.firstName && (
+                          <p className="text-red-500 text-sm mt-1">
+                            {errors.firstName}
+                          </p>
+                        )}
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Last Name
+                        </label>
                         <input
                           type="text"
                           placeholder="Last name"
                           className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
                           value={address.lastName}
-                          onChange={(e) => setAddress({ ...address, lastName: e.target.value })}
+                          onChange={(e) =>
+                            setAddress({ ...address, lastName: e.target.value })
+                          }
                         />
-                        {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>}
+                        {errors.lastName && (
+                          <p className="text-red-500 text-sm mt-1">
+                            {errors.lastName}
+                          </p>
+                        )}
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Email Address
+                      </label>
                       <input
                         type="email"
                         placeholder="your@email.com"
                         className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
                         value={address.email}
-                        onChange={(e) => setAddress({ ...address, email: e.target.value })}
+                        onChange={(e) =>
+                          setAddress({ ...address, email: e.target.value })
+                        }
                       />
-                      {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+                      {errors.email && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.email}
+                        </p>
+                      )}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Phone Number
+                      </label>
                       <input
                         type="tel"
                         placeholder="+91 98765 43210"
                         className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
                         value={address.mobile}
-                        onChange={(e) => setAddress({ ...address, mobile: e.target.value })}
+                        onChange={(e) =>
+                          setAddress({ ...address, mobile: e.target.value })
+                        }
                       />
-                      {errors.mobile && <p className="text-red-500 text-sm mt-1">{errors.mobile}</p>}
+                      {errors.mobile && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.mobile}
+                        </p>
+                      )}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Message</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Message
+                      </label>
                       <textarea
                         placeholder="Type Your Message"
                         rows={3}
                         className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition resize-none"
                         value={address.fullAddress}
-                        onChange={(e) => setAddress({ ...address, fullAddress: e.target.value })}
+                        onChange={(e) =>
+                          setAddress({
+                            ...address,
+                            fullAddress: e.target.value,
+                          })
+                        }
                       />
-                      {errors.fullAddress && <p className="text-red-500 text-sm mt-1">{errors.fullAddress}</p>}
+                      {errors.fullAddress && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.fullAddress}
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
@@ -464,7 +589,9 @@ const handleLogin = async () => {
 
               {isLoggedIn && (
                 <div className="border-t pt-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-3">Have a coupon?</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Have a coupon?
+                  </label>
                   <div className="flex gap-2">
                     <input
                       type="text"
@@ -497,13 +624,19 @@ const handleLogin = async () => {
               </div>
 
               <div>
-                <h3 className="font-bold text-xl text-gray-900 mb-2">{preparedItem.title}</h3>
-                <p className="text-gray-600 text-sm">{preparedItem.description}</p>
+                <h3 className="font-bold text-xl text-gray-900 mb-2">
+                  {preparedItem.title}
+                </h3>
+                <p className="text-gray-600 text-sm">
+                  {preparedItem.description}
+                </p>
               </div>
 
               <div className="flex items-center justify-between text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
                 <span> Enrolled</span>
-                <span className="font-semibold text-gray-900">{studentsDisplay}</span>
+                <span className="font-semibold text-gray-900">
+                  {studentsDisplay}
+                </span>
               </div>
 
               <div className="space-y-3 border-t border-b py-4">
@@ -529,10 +662,11 @@ const handleLogin = async () => {
 
               <button
                 onClick={handlePayment}
-                className={`w-full py-4 rounded-lg font-bold text-white transition duration-200 flex items-center justify-center gap-2 ${loadingPayment
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-green-600 hover:bg-green-700 active:scale-95"
-                  }`}
+                className={`w-full py-4 rounded-lg font-bold text-white transition duration-200 flex items-center justify-center gap-2 ${
+                  loadingPayment
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-green-600 hover:bg-green-700 active:scale-95"
+                }`}
                 disabled={loadingPayment}
               >
                 <FaLock className="text-sm" />
@@ -548,5 +682,4 @@ const handleLogin = async () => {
       </div>
     </div>
   );
-
 }

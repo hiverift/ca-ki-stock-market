@@ -21,6 +21,7 @@ function LoginPage() {
   });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [successMsg, setSuccessMsg] = useState("");
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -45,13 +46,13 @@ function LoginPage() {
       const payload =
         activeTab === "email"
           ? {
-            email: formData.email,
-            password: formData.password,
-          }
+              email: formData.email,
+              password: formData.password,
+            }
           : {
-            mobile: formData.mobile,
-            password: formData.password,
-          };
+              mobile: formData.mobile,
+              password: formData.password,
+            };
 
       const response = await axios.post(
         `${config.BASE_URL}auth/login`,
@@ -71,7 +72,6 @@ function LoginPage() {
 
       console.log("Login Response:", result);
 
-
       //  if (user?.role === "admin") {
       //   localStorage.setItem("admin", user._id);
       //   localStorage.setItem("adminId", user._id);
@@ -85,22 +85,28 @@ function LoginPage() {
       // }
       // Role-based redirect + storage (based on response.user.role)
       if (user?.role === "admin") {
+        setSuccessMsg("Login successful!");
+
         // keep admin id for quick checks
-        localStorage.setItem("accessToken", result.accessToken)
-        localStorage.setItem("refreshToken", result.refreshToken)
+        localStorage.setItem("accessToken", result.accessToken);
+        localStorage.setItem("refreshToken", result.refreshToken);
         localStorage.setItem("admin", user._id);
         localStorage.setItem("adminId", user._id);
         localStorage.setItem("user", JSON.stringify(user));
-        navigate("/admin-dashboard");
+        setTimeout(() => navigate("/admin-dashboard"), 800);
       } else if (user?.role === "user") {
-        localStorage.setItem("accessToken", result.accessToken)
-        localStorage.setItem("refreshToken", result.refreshToken)
+        setSuccessMsg("Login successful!");
+        localStorage.setItem("accessToken", result.accessToken);
+        localStorage.setItem("refreshToken", result.refreshToken);
         localStorage.setItem("user", JSON.stringify(user));
         localStorage.setItem("userId", user._id);
         navigate("/user-dashboard");
       } else {
         // If role missing or unknown, fallback to a generic dashboard or show message
-        console.warn("Unknown or missing user.role in login response:", user?.role);
+        console.warn(
+          "Unknown or missing user.role in login response:",
+          user?.role
+        );
         navigate("/user-dashboard");
       }
     } catch (error) {
@@ -108,8 +114,8 @@ function LoginPage() {
         Swal.fire(
           "Error",
           (error.response.data?.message && error.response.data.message[0]) ||
-          error.response.data?.message ||
-          "Login failed",
+            error.response.data?.message ||
+            "Login failed",
           "error"
         );
       else if (error.request)
@@ -127,16 +133,27 @@ function LoginPage() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50 px-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-6 sm:p-8 lg:p-10">
+        {successMsg && (
+          <div className="bg-green-100  text-green-700 px-4 py-3 rounded-lg mb-4 text-center">
+            {successMsg}
+          </div>
+        )}
+
         <div className="text-center mb-6">
           <h2 className="text-2xl text-gray-800">Welcome Back</h2>
-          <p className="text-gray-500 text-sm">Sign in to access your dashboard</p>
+          <p className="text-gray-500 text-sm">
+            Sign in to access your dashboard
+          </p>
         </div>
 
         <div className="flex rounded-lg bg-gray-100 mb-6">
           <button
             onClick={() => setActiveTab("email")}
-            className={`flex-1 py-2 text-sm rounded-lg ${activeTab === "email" ? "bg-white shadow text-gray-800" : "text-gray-500"
-              }`}
+            className={`flex-1 py-2 text-sm rounded-lg ${
+              activeTab === "email"
+                ? "bg-white shadow text-gray-800"
+                : "text-gray-500"
+            }`}
           >
             <div className="flex items-center justify-center gap-2">
               <EnvelopeIcon className="h-4 w-4" /> Email
@@ -144,8 +161,11 @@ function LoginPage() {
           </button>
           <button
             onClick={() => setActiveTab("mobile")}
-            className={`flex-1 py-2 text-sm rounded-lg ${activeTab === "mobile" ? "bg-white shadow text-gray-800" : "text-gray-500"
-              }`}
+            className={`flex-1 py-2 text-sm rounded-lg ${
+              activeTab === "mobile"
+                ? "bg-white shadow text-gray-800"
+                : "text-gray-500"
+            }`}
           >
             <div className="flex items-center justify-center gap-2">
               <PhoneIcon className="h-4 w-4" /> Mobile

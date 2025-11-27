@@ -11,7 +11,7 @@ import config from "./config";
 import {
   getServices,
   getAvailability,
-  createBooking
+  createBooking,
 } from "../Api/bookings/bookings";
 import ApiLogin from "../Api/bookings/auth.js";
 import axios, { Axios } from "axios";
@@ -19,8 +19,6 @@ import axios, { Axios } from "axios";
 const localizer = momentLocalizer(moment);
 
 export default function AppointmentPage() {
-
-
   const navigate = useNavigate();
 
   const location = useLocation();
@@ -42,7 +40,6 @@ export default function AppointmentPage() {
   const [postLoginAction, setPostLoginAction] = useState(null);
 
   const [availableDates, setAvailableDates] = useState([]); // Dates with slots
-
 
   const [registerForm, setRegisterForm] = useState({
     name: "",
@@ -106,8 +103,6 @@ export default function AppointmentPage() {
   //   }
   // };
 
-
-
   // Updated Next button handler
   // const handleNextPaymentStep = () => {
   //   const token = localStorage.getItem("token") || localStorage.getItem("accessToken");
@@ -132,7 +127,6 @@ export default function AppointmentPage() {
   //   setStep(3);
   // };
 
-
   useEffect(() => {
     const token = localStorage.getItem("token");
     const userId = localStorage.getItem("userId");
@@ -145,6 +139,27 @@ export default function AppointmentPage() {
       openLoginModal(null);
     }
   }, [step, isAuthenticated]);
+
+  // ⭐ Step Navigation Control Function
+  const canGoToStep = (targetStep) => {
+    if (targetStep === 1) return true;
+
+    if (targetStep === 2 && selectedService) return true;
+
+    if (targetStep === 3 && selectedService && selectedDate && selectedSlot)
+      return true;
+
+    if (
+      targetStep === 4 &&
+      isAuthenticated &&
+      selectedService &&
+      selectedDate &&
+      selectedSlot
+    )
+      return true;
+
+    return false;
+  };
 
   const doLogin = async (form) => {
     if (!form.email || !form.password) {
@@ -161,7 +176,12 @@ export default function AppointmentPage() {
 
     try {
       const data = await ApiLogin(form);
-      const token = data?.token ?? localStorage.getItem("token") ?? data?.accessToken ?? data?.jwt ?? null;
+      const token =
+        data?.token ??
+        localStorage.getItem("token") ??
+        data?.accessToken ??
+        data?.jwt ??
+        null;
 
       if (token) {
         localStorage.setItem("token", token);
@@ -170,12 +190,13 @@ export default function AppointmentPage() {
 
       const user = data?.user ?? data;
       if (user) {
-        if (user._id || user.id) localStorage.setItem("userId", user._id ?? user.id);
+        if (user._id || user.id)
+          localStorage.setItem("userId", user._id ?? user.id);
         if (user.name) localStorage.setItem("userName", user.name);
         if (user.email) localStorage.setItem("userEmail", user.email);
         try {
           localStorage.setItem("user", JSON.stringify(user));
-        } catch (e) { }
+        } catch (e) {}
       }
 
       setIsAuthenticated(true);
@@ -205,7 +226,8 @@ export default function AppointmentPage() {
   };
 
   const requireAuthInline = (actionIfAuthenticated) => {
-    const token = localStorage.getItem("token") || localStorage.getItem("accessToken");
+    const token =
+      localStorage.getItem("token") || localStorage.getItem("accessToken");
     if (!token) {
       openLoginModal(actionIfAuthenticated);
       return false;
@@ -254,8 +276,12 @@ export default function AppointmentPage() {
             const startUtc = s.start ? moment.utc(s.start) : null;
             const endUtc = s.end ? moment.utc(s.end) : null;
 
-            const startIST = startUtc ? startUtc.tz("Asia/Kolkata").toDate() : null;
-            const endIST = endUtc ? endUtc.tz("Asia/Kolkata").toDate() : startIST;
+            const startIST = startUtc
+              ? startUtc.tz("Asia/Kolkata").toDate()
+              : null;
+            const endIST = endUtc
+              ? endUtc.tz("Asia/Kolkata").toDate()
+              : startIST;
 
             return {
               ...s,
@@ -286,12 +312,18 @@ export default function AppointmentPage() {
           }
         }
 
-        const datesSet = new Set(unique.map((s) => moment(s.start).startOf("day").toISOString()));
+        const datesSet = new Set(
+          unique.map((s) => moment(s.start).startOf("day").toISOString())
+        );
         setAvailableDates(Array.from(datesSet));
 
         if (selectedDate) {
           const dayIso = moment(selectedDate).startOf("day").toISOString();
-          setSlotsForDate(unique.filter((s) => moment(s.start).startOf("day").toISOString() === dayIso));
+          setSlotsForDate(
+            unique.filter(
+              (s) => moment(s.start).startOf("day").toISOString() === dayIso
+            )
+          );
         } else {
           setSlotsForDate([]);
         }
@@ -331,7 +363,8 @@ export default function AppointmentPage() {
     requireAuthInline(async () => {
       setIsLoading(true);
       try {
-        const token = localStorage.getItem("token") || localStorage.getItem("accessToken");
+        const token =
+          localStorage.getItem("token") || localStorage.getItem("accessToken");
         const bookingPayload = {
           serviceId: selectedService?._id ?? selectedService?.id,
           slotId: selectedSlot?.id,
@@ -351,7 +384,9 @@ export default function AppointmentPage() {
             appointmenttype: "appointment",
             appointmentId: bookingResult.bookingId,
             title: selectedService?.name,
-            description: `Appointment on ${moment(selectedDate).format("DD MMM YYYY")} at ${selectedSlot?.label}`,
+            description: `Appointment on ${moment(selectedDate).format(
+              "DD MMM YYYY"
+            )} at ${selectedSlot?.label}`,
             price: Number(selectedService?.price) || 0,
             slot: selectedSlot,
             date: selectedDate,
@@ -369,7 +404,11 @@ export default function AppointmentPage() {
 
   const handleRegisterSubmit = async () => {
     if (!agreed) {
-      Swal.fire("Error", "Please agree to the Terms and Privacy Policy", "error");
+      Swal.fire(
+        "Error",
+        "Please agree to the Terms and Privacy Policy",
+        "error"
+      );
       return;
     }
 
@@ -405,31 +444,40 @@ export default function AppointmentPage() {
         return;
       }
 
-      Swal.fire("Success", "Account created successfully!", "success").then(() => {
-        // Reset form
-        setRegisterForm({
-          name: "",
-          email: "",
-          mobile: "",
-          password: "",
-          confirmPassword: "",
-        });
-        setAgreed(false);
-        setShowRegisterModal(false);
-        setShowLoginModal(true); // Optionally open login after successful registration
-      });
+      Swal.fire("Success", "Account created successfully!", "success").then(
+        () => {
+          // Reset form
+          setRegisterForm({
+            name: "",
+            email: "",
+            mobile: "",
+            password: "",
+            confirmPassword: "",
+          });
+          setAgreed(false);
+          setShowRegisterModal(false);
+          setShowLoginModal(true); // Optionally open login after successful registration
+        }
+      );
     } catch (error) {
       console.error("Register error:", error);
       if (error.response) {
-        Swal.fire("Error", error.response.data.message || "Something went wrong!", "error");
+        Swal.fire(
+          "Error",
+          error.response.data.message || "Something went wrong!",
+          "error"
+        );
       } else {
-        Swal.fire("Error", "Unable to connect to server. Try again later.", "error");
+        Swal.fire(
+          "Error",
+          "Unable to connect to server. Try again later.",
+          "error"
+        );
       }
     } finally {
       setRegisterLoading(false);
     }
   };
-
 
   return (
     <div className="px-4 pt-5 md:py-12 bg-gray-50 min-h-screen mt-10">
@@ -439,11 +487,18 @@ export default function AppointmentPage() {
           {["Service", "Schedule", "Payment", "Confirm"].map((label, i) => (
             <div
               key={i}
-              onClick={() => setStep(i + 1)}
-              className={`cursor-pointer p-3 rounded-lg text-sm font-medium ${step === i + 1
-                ? "bg-yellow-400 text-black"
-                : "bg-gray-200 text-gray-600 hover:bg-gray-300"
-                }`}
+              onClick={() => {
+                if (canGoToStep(i + 1)) setStep(i + 1);
+              }}
+              className={`p-3 rounded-lg text-sm font-medium 
+        ${
+          step === i + 1
+            ? "bg-yellow-400 text-black"
+            : canGoToStep(i + 1)
+            ? "bg-gray-200 text-gray-600 hover:bg-gray-300 cursor-pointer"
+            : "bg-gray-100 text-gray-400 cursor-not-allowed"
+        }
+      `}
             >
               {label}
             </div>
@@ -468,10 +523,11 @@ export default function AppointmentPage() {
                     <div
                       key={s._id ?? s.id}
                       onClick={() => setSelectedService(s)}
-                      className={`cursor-pointer border rounded-lg p-4 text-center ${selectedService?._id === s._id
-                        ? "border-yellow-400 bg-yellow-50"
-                        : "border-gray-200"
-                        }`}
+                      className={`cursor-pointer border rounded-lg p-4 text-center ${
+                        selectedService?._id === s._id
+                          ? "border-yellow-400 bg-yellow-50"
+                          : "border-gray-200"
+                      }`}
                     >
                       <h3 className="font-medium">{s.name}</h3>
                       <p className="text-gray-600">₹{s.price}</p>
@@ -539,17 +595,20 @@ export default function AppointmentPage() {
                             key={slot.id}
                             onClick={() => !isFull && setSelectedSlot(slot)}
                             disabled={isFull}
-                            className={`px-4 py-2 rounded-lg border ${selectedSlot?.id === slot.id
-                              ? "bg-yellow-400 text-black border-yellow-400"
-                              : isFull
+                            className={`px-4 py-2 rounded-lg border ${
+                              selectedSlot?.id === slot.id
+                                ? "bg-yellow-400 text-black border-yellow-400"
+                                : isFull
                                 ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
                                 : "bg-gray-50 text-gray-700 border-gray-200"
-                              }`}
+                            }`}
                           >
                             <div className="flex items-center justify-between">
                               <span>{slot.label}</span>
                               <small className="text-xs">
-                                {isFull ? "Full" : `${slot.seatsLeft ?? 1} left`}
+                                {isFull
+                                  ? "Full"
+                                  : `${slot.seatsLeft ?? 1} left`}
                               </small>
                             </div>
                           </button>
@@ -578,8 +637,6 @@ export default function AppointmentPage() {
                 >
                   Next: Payment
                 </button>
-
-
               </div>
             </>
           )}
@@ -676,7 +733,9 @@ export default function AppointmentPage() {
               <button
                 onClick={() => doLogin(loginForm)}
                 className="px-4 py-2 rounded bg-yellow-400 hover:bg-yellow-500 text-black"
-                disabled={loginLoading || !loginForm.email || !loginForm.password}
+                disabled={
+                  loginLoading || !loginForm.email || !loginForm.password
+                }
               >
                 {loginLoading ? "Logging in..." : "Login"}
               </button>
@@ -694,8 +753,6 @@ export default function AppointmentPage() {
                 Register here
               </span>
             </p>
-
-
           </div>
         </div>
       )}
@@ -712,35 +769,48 @@ export default function AppointmentPage() {
                 placeholder="Name"
                 className="w-full px-3 py-2 border rounded"
                 value={registerForm.name}
-                onChange={(e) => setRegisterForm({ ...registerForm, name: e.target.value })}
+                onChange={(e) =>
+                  setRegisterForm({ ...registerForm, name: e.target.value })
+                }
               />
               <input
                 type="email"
                 placeholder="Email"
                 className="w-full px-3 py-2 border rounded"
                 value={registerForm.email}
-                onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
+                onChange={(e) =>
+                  setRegisterForm({ ...registerForm, email: e.target.value })
+                }
               />
               <input
                 type="tel"
                 placeholder="Mobile Number"
                 className="w-full px-3 py-2 border rounded"
                 value={registerForm.mobile}
-                onChange={(e) => setRegisterForm({ ...registerForm, mobile: e.target.value })}
+                onChange={(e) =>
+                  setRegisterForm({ ...registerForm, mobile: e.target.value })
+                }
               />
               <input
                 type={showPassword ? "text" : "password"}
                 placeholder="Password"
                 className="w-full px-3 py-2 border rounded"
                 value={registerForm.password}
-                onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
+                onChange={(e) =>
+                  setRegisterForm({ ...registerForm, password: e.target.value })
+                }
               />
               <input
                 type={showConfirmPassword ? "text" : "password"}
                 placeholder="Confirm Password"
                 className="w-full px-3 py-2 border rounded"
                 value={registerForm.confirmPassword}
-                onChange={(e) => setRegisterForm({ ...registerForm, confirmPassword: e.target.value })}
+                onChange={(e) =>
+                  setRegisterForm({
+                    ...registerForm,
+                    confirmPassword: e.target.value,
+                  })
+                }
               />
             </div>
 
@@ -771,8 +841,14 @@ export default function AppointmentPage() {
                 onChange={() => setAgreed(!agreed)}
               />
               <label className="text-sm text-gray-700">
-                I agree to the <a href="#" className="text-blue-600 hover:underline">Terms</a> and{" "}
-                <a href="#" className="text-blue-600 hover:underline">Privacy Policy</a>
+                I agree to the{" "}
+                <a href="#" className="text-blue-600 hover:underline">
+                  Terms
+                </a>{" "}
+                and{" "}
+                <a href="#" className="text-blue-600 hover:underline">
+                  Privacy Policy
+                </a>
               </label>
             </div>
 
@@ -810,12 +886,6 @@ export default function AppointmentPage() {
           </div>
         </div>
       )}
-
-
-
-
-
-
     </div>
   );
 }

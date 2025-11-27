@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Calendar, Clock, Users, Video } from "lucide-react";
-import config from "../pages/config"; // Verify path
+import config from "../pages/config";
 import cardImage from "../assets/image/card.jpg";
 
 const MyWebinars = () => {
@@ -31,31 +31,34 @@ const MyWebinars = () => {
         if (!res.ok) throw new Error("Failed to fetch webinars");
 
         const data = await res.json();
-
-        // const webinarsData1 = (data.result?.webinars || [])
-        //   .filter((webinar) => webinar.paid === true)
-        //   .map((webinar) => ({
-        //     ...webinar.details,
-        //     paid: webinar.paid,
-        //     latestOrder: webinar.orders?.[webinar.orders.length - 1] || null,
-        //     itemType: webinar.itemType,
-        //     itemId: webinar.itemId,
-        //   }));
         console.log("Fetched webinars data:", data);
 
+        // Convert API response → webinar list
         const webinarsData = data.result.webinars.flatMap((c) =>
           c.orders.map((order) => ({
             ...c.details,       // webinar details
             itemType: "webinar",
             paid: c.paid,
             order,               // attach order info
-            googleMeetLink: c.details.googleMeetLink, // <-- add this
+            googleMeetLink: c.details.googleMeetLink,
           }))
         );
 
         console.log("Processed webinars:", webinarsData);
 
-        setWebinars(webinarsData);
+        // ✅ Filter → show only today & future webinars
+        const filteredWebinars = webinarsData.filter((wb) => {
+          const webinarDate = new Date(wb.startDate);
+          const today = new Date();
+
+          // compare dates without time
+          today.setHours(0, 0, 0, 0);
+          webinarDate.setHours(0, 0, 0, 0);
+
+          return webinarDate >= today;
+        });
+
+        setWebinars(filteredWebinars);
       } catch (err) {
         console.error("Error fetching webinars:", err);
         setError("Failed to fetch webinars. Please try again later.");
@@ -87,11 +90,11 @@ const MyWebinars = () => {
   if (webinars.length === 0) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <p className="text-gray-600 text-xl">No paid webinars available.</p>
+        <p className="text-gray-600 text-xl">No upcoming webinars found.</p>
       </div>
     );
   }
-  console.log("Webinars:", webinars);
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 space-y-6 md:ml-64">
 
@@ -154,9 +157,8 @@ const MyWebinars = () => {
             <hr className="border my-3" />
 
             <div className="flex items-center justify-between mt-auto space-x-2">
-              <span className="text-xl text-gray-600">
-                ₹{webinar.price || "Free"}
-              </span>
+              <span className="text-xl text-gray-600">₹{webinar.price || "Free"}</span>
+
               {webinar.googleMeetLink ? (
                 <a
                   href={webinar.googleMeetLink}
@@ -181,3 +183,4 @@ const MyWebinars = () => {
 };
 
 export default MyWebinars;
+

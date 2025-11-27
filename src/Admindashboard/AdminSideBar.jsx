@@ -12,7 +12,6 @@ import {
   PencilSquareIcon,
   Bars3Icon,
   XMarkIcon,
-
   ChevronDownIcon,
 } from "@heroicons/react/24/outline";
 
@@ -22,27 +21,74 @@ const AdminSideBar = () => {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [categoryOpen, setCategoryOpen] = useState(false);
-
+  const [logoutMsg, setLogoutMsg] = useState("");
   const menuItems = [
-    { name: "Dashboard", icon: <HomeIcon className="h-5 w-5" />, path: "/admin-dashboard" },
-    { name: "Courses", icon: <BookOpenIcon className="h-5 w-5" />, path: "/admin-dashboard/courses" },
-    { name: "Webinars", icon: <PresentationChartLineIcon className="h-5 w-5" />, path: "/admin-dashboard/webinars" },
-    { name: "Appointments", icon: <CalendarDaysIcon className="h-5 w-5" />, path: "/admin-dashboard/appointments" },
-    { name: "Services", icon: <CreditCardIcon className="h-5 w-5" />, path: "/admin-dashboard/services" },
+    {
+      name: "Dashboard",
+      icon: <HomeIcon className="h-5 w-5" />,
+      path: "/admin-dashboard",
+    },
+    {
+      name: "Courses",
+      icon: <BookOpenIcon className="h-5 w-5" />,
+      path: "/admin-dashboard/courses",
+    },
+    {
+      name: "Webinars",
+      icon: <PresentationChartLineIcon className="h-5 w-5" />,
+      path: "/admin-dashboard/webinars",
+    },
+    {
+      name: "Appointments",
+      icon: <CalendarDaysIcon className="h-5 w-5" />,
+      path: "/admin-dashboard/appointments",
+    },
+    {
+      name: "Services",
+      icon: <CreditCardIcon className="h-5 w-5" />,
+      path: "/admin-dashboard/services",
+    },
     // { name: "Payments", icon: <CreditCardIcon className="h-5 w-5" />, path: "/admin-dashboard/payments" },
-    { name: "order", icon: <UsersIcon className="h-5 w-5" />, path: "/admin-dashboard/Adminorder" },
-    { name: "User Management", icon: <UsersIcon className="h-5 w-5" />, path: "/admin-dashboard/user-management" },
-    { name: "KYC", icon: <UsersIcon className="h-5 w-5" />, path: "/admin-dashboard/kyc-verification" },
+    {
+      name: "order",
+      icon: <UsersIcon className="h-5 w-5" />,
+      path: "/admin-dashboard/Adminorder",
+    },
+    {
+      name: "User Management",
+      icon: <UsersIcon className="h-5 w-5" />,
+      path: "/admin-dashboard/user-management",
+    },
+    {
+      name: "KYC",
+      icon: <UsersIcon className="h-5 w-5" />,
+      path: "/admin-dashboard/kyc-verification",
+    },
 
-    { name: "Premium Webinars", icon: <PresentationChartLineIcon className="h-5 w-5" />, path: "/admin-dashboard/premium-webinars" },
-    { name: "Premium Courses", icon: <BookOpenIcon className="h-5 w-5" />, path: "/admin-dashboard/premium-courses" },
-    { name: "Premium Appointments", icon: <CalendarDaysIcon className="h-5 w-5" />, path: "/admin-dashboard/premium-appointments" },
-
+    {
+      name: "Premium Webinars",
+      icon: <PresentationChartLineIcon className="h-5 w-5" />,
+      path: "/admin-dashboard/premium-webinars",
+    },
+    {
+      name: "Premium Courses",
+      icon: <BookOpenIcon className="h-5 w-5" />,
+      path: "/admin-dashboard/premium-courses",
+    },
+    {
+      name: "Premium Appointments",
+      icon: <CalendarDaysIcon className="h-5 w-5" />,
+      path: "/admin-dashboard/premium-appointments",
+    },
   ];
 
   const handleLogout = () => {
     localStorage.clear();
-    navigate("/login");
+    setLogoutMsg("Logout successful!");
+
+    setTimeout(() => {
+      navigate("/login");
+    }, 800);
   };
 
   const handleEditProfile = () => {
@@ -51,13 +97,27 @@ const AdminSideBar = () => {
 
   return (
     <>
+      {logoutMsg && (
+        <div
+          className="fixed top-4 left-1/2 transform -translate-x-1/2 
+                  bg-ed-100 text-red-700 
+                  px-4 py-3 rounded-lg shadow-lg z-50"
+        >
+          {logoutMsg}
+        </div>
+      )}
+
       {/* Mobile Toggle */}
       <div className="md:hidden fixed top-4 left-4 z-50">
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="p-2 bg-yellow-400 rounded-md text-white shadow-md"
         >
-          {isOpen ? <XMarkIcon className="h-6 w-6" /> : <Bars3Icon className="h-6 w-6" />}
+          {isOpen ? (
+            <XMarkIcon className="h-6 w-6" />
+          ) : (
+            <Bars3Icon className="h-6 w-6" />
+          )}
         </button>
       </div>
 
@@ -78,7 +138,10 @@ const AdminSideBar = () => {
                 to={item.path}
                 onClick={() => setIsOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 py-2 px-3 rounded-md transition font-medium ${isActive ? " text-black" : "text-gray-700 hover:bg-yellow-100"
+                  `flex items-center gap-3 py-2 px-3 rounded-md transition font-medium ${
+                    isActive
+                      ? " text-black"
+                      : "text-gray-700 hover:bg-yellow-100"
                   }`
                 }
               >

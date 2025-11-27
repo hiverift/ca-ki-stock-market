@@ -3,70 +3,74 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import axios from "axios";
 import config from "../pages/config";
-const BASE_URL = config.BASE_URL;
+
+const BASE_URL = config.BASE_URL.replace(/\/$/, "");
 
 const AdminAppointment = () => {
-  const defaultTimes = [
-    "09:00",
-    "10:00",
-    "11:00",
-    "12:00",
-    "14:00",
-    "15:00",
-    "16:00",
-  ];
+  const defaultTimes = ["09:00", "10:00", "11:00", "12:00", "14:00", "15:00", "16:00"];
 
-  // Convert to 12-hour format
-  const formatTime12Hour = (time) => {
-    let [hour, minute] = time.split(":").map(Number);
-    const ampm = hour >= 12 ? "PM" : "AM";
-    hour = hour % 12 || 12;
-    return `${hour}:${minute.toString().padStart(2, "0")} ${ampm}`;
+  // Format ISO → YYYY-MM-DD
+  const formatDate = (iso) => {
+    if (!iso) return "-";
+    return new Date(iso).toISOString().split("T")[0];
   };
 
-  // Convert Date object to yyyy-mm-dd in local time
-  const formatDateLocal = (date) => {
-    const d = new Date(date);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
+  // Format ISO → HH:MM AM/PM
+  const formatTime = (iso) => {
+    if (!iso) return "-";
+    const d = new Date(iso);
+    let h = d.getHours();
+    let m = d.getMinutes();
+    const ampm = h >= 12 ? "PM" : "AM";
+    h = h % 12 || 12;
+    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")} ${ampm}`;
   };
-  const [fromDate, setFromDate] = useState(new Date()); // default today
-  const [toDate, setToDate] = useState(new Date()); // ya agar chaho next day: new Date(new Date().getTime() + 24*60*60*1000)
 
+  const formatDateLocal = (date) => new Date(date).toISOString().split("T")[0];
+
+  // STATES
+  const [fromDate, setFromDate] = useState(new Date());
+  const [toDate, setToDate] = useState(new Date());
   const [selectedTimes, setSelectedTimes] = useState([]);
   const [serviceId, setServiceId] = useState("");
   const [capacity, setCapacity] = useState("");
+
   const [savedSlots, setSavedSlots] = useState([]);
   const [services, setServices] = useState([]);
+  const [popupMsg, setPopupMsg] = useState("");
 
-  // Fetch services from API
-  useEffect(() => {
-    const fetchServices = async () => {
-      try {
-        const res = await axios.get(`${BASE_URL}/services`);
-        setServices(res.data.result || []);
-      } catch (err) {
-        console.error("Error fetching services:", err);
-      }
-    };
-    fetchServices();
-  }, []);
-
-  // Toggle time selection
-  const toggleTime = (time) => {
-    if (selectedTimes.includes(time)) {
-      setSelectedTimes(selectedTimes.filter((t) => t !== time));
-    } else {
-      setSelectedTimes([...selectedTimes, time]);
+  // FETCH SERVICES
+  const fetchServices = async () => {
+    try {
+      const res = await axios.get(`${BASE_URL}/services`);
+      setServices(res.data?.result || []);
+    } catch (error) {
+      console.log("Service fetch error", error);
     }
   };
 
-  // Save slots
+  // FETCH ALL SLOTS (NEWEST FIRST)
+  const getAllSlots = async () => {
+    try {
+      const res = await axios.get(`${BASE_URL}/getAllSlots`);
+      const sorted = (res.data?.result || []).sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+      );
+      setSavedSlots(sorted);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    fetchServices();
+    getAllSlots();
+  }, []);
+
+  // CREATE SLOT
   const handleSaveSlots = async () => {
-    if (!serviceId || !fromDate || !toDate || selectedTimes.length === 0 || !capacity) {
-      alert("Please select Service, From date, To date, Times, and Capacity");
+    if (!serviceId || !capacity || selectedTimes.length === 0) {
+      showPopup("Please fill all fields");
       return;
     }
 
@@ -78,176 +82,195 @@ const AdminAppointment = () => {
       times: selectedTimes,
     };
 
-    console.log("Saving slots payload:", payload);
-    console.log("POST URL:", `${BASE_URL}/admin/slots/bulk`);
-
     try {
-      const res = await axios.post(`${BASE_URL}/admin/slots/bulk`, payload);
-      console.log("API response:", res);
-
-      if (res.status === 200 || res.status === 201) {
-        alert("✅ Slots saved successfully!");
-        setSavedSlots([...savedSlots, payload]);
-
-        // Reset fields
-        setServiceId("");
-        setFromDate(null);
-        setToDate(null);
-        setSelectedTimes([]);
-        setCapacity("");
-      }
+      await axios.post(`${BASE_URL}/admin/slots/bulk`, payload);
+      showPopup("Slot Saved");
+      getAllSlots();
+      resetForm();
     } catch (err) {
-      console.error("Error saving slots:", err.response || err);
-      alert("❌ Failed to save slots. Check console for details.");
+      console.error(err);
+      showPopup("Save failed");
     }
   };
 
+  // DELETE SLOT
+  const deleteSlot = async (slotId) => {
+    if (!window.confirm("Delete this slot?")) return;
+
+    try {
+      await axios.delete(`${BASE_URL}/admin/slots/${slotId}`);
+      showPopup("Slot deleted");
+      getAllSlots();
+    } catch (err) {
+      console.error(err);
+      showPopup("Delete failed");
+    }
+  };
+
+  // Helpers
+  const toggleTime = (time) =>
+    setSelectedTimes((prev) =>
+      prev.includes(time) ? prev.filter((t) => t !== time) : [...prev, time]
+    );
+
+  const resetForm = () => {
+    setServiceId("");
+    setFromDate(new Date());
+    setToDate(new Date());
+    setSelectedTimes([]);
+    setCapacity("");
+  };
+
+  const showPopup = (msg) => {
+    setPopupMsg(msg);
+    setTimeout(() => setPopupMsg(""), 2000);
+  };
+
   return (
-    <div className="p-8 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
-      <div className="max-w-8xl mx-auto">
-        <h2 className="text-4xl font-bold text-gray-800 mb-10 text-center">
-          📅 Appointment Slot Manager
-        </h2>
+    <div className="p-8 bg-gray-50 min-h-screen">
 
-        {/* Card: Service + Date Range & Capacity */}
-        <div className="bg-white p-8 rounded-2xl shadow-lg mb-10">
-          <h3 className="text-xl font-semibold text-gray-700 mb-6 border-b pb-3">
-            Slot Settings
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {/* Service Dropdown */}
-            <div>
-              <p className="text-sm font-medium text-gray-600 mb-1">Service</p>
-              <select
-                value={serviceId}
-                onChange={(e) => setServiceId(e.target.value)}
-                className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-yellow-400 outline-none"
-              >
-                <option value="">Select Service</option>
-                {services.map((s) => (
-                  <option key={s._id} value={s._id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <p className="text-sm font-medium text-gray-600 mb-1">From Date</p>
-              <DatePicker
-                selected={fromDate}
-                onChange={(date) => setFromDate(date)}
-                minDate={new Date()}
-                placeholderText="Select from date"
-                className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-yellow-400 outline-none"
-              />
-            </div>
-
-            <div>
-              <p className="text-sm font-medium text-gray-600 mb-1">To Date</p>
-              <DatePicker
-                selected={toDate}
-                onChange={(date) => setToDate(date)}
-                minDate={fromDate || new Date()}
-                placeholderText="Select to date"
-                className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-yellow-400 outline-none"
-              />
-            </div>
-
-            <div>
-              <p className="text-sm font-medium text-gray-600 mb-1">Capacity</p>
-              <input
-                type="number"
-                value={capacity}
-                min={1}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setCapacity(val === "" ? "" : Number(val));
-                }}
-                className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-yellow-400 outline-none"
-              />
-            </div>
-          </div>
+      {popupMsg && (
+        <div className="fixed top-5 right-5 bg-green-600 text-white px-4 py-2 rounded shadow">
+          {popupMsg}
         </div>
+      )}
 
-        {/* Card: Time Slots */}
-        <div className="bg-white p-8 rounded-2xl shadow-lg mb-10">
-          <h3 className="text-xl font-semibold text-gray-700 mb-6 border-b pb-3">
-            Select Available Times
-          </h3>
+      <h2 className="text-3xl font-bold text-center mb-6">Appointment Slot Manager</h2>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {defaultTimes.map((time) => (
-              <button
-                key={time}
-                onClick={() => toggleTime(time)}
-                className={`px-4 py-2 rounded-xl border text-sm font-medium transition ${selectedTimes.includes(time)
-                  ? "bg-blue-600  text-white border-yellow-500 shadow"
-                  : "bg-gray-50 text-gray-700 border-gray-300 hover:bg-yellow-50"
-                  }`}
-              >
-                {formatTime12Hour(time)}
-              </button>
-            ))}
-          </div>
-        </div>
+      {/* CREATE SLOT UI */}
+   <div className="bg-white p-6 rounded-xl shadow mb-6">
+  <h3 className="text-lg font-semibold mb-4">Create Slot</h3>
 
-        {/* Save Button */}
-        <div className="flex justify-center mb-10">
-  <button
-    onClick={handleSaveSlots}
-    className="px-6 py-3 bg-blue-600 text-white rounded-xl flex items-center gap-2"
-  >
-    💾 Save Slot
-  </button>
+  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+
+    {/* SERVICE */}
+    <div className="flex flex-col">
+      <label className="text-xs font-semibold text-gray-600 mb-1">Select Service</label>
+      <select
+        value={serviceId}
+        onChange={(e) => setServiceId(e.target.value)}
+        className="border p-2 rounded h-[42px]"
+      >
+        <option value="">Select Service</option>
+        {services.map((s) => (
+          <option key={s._id} value={s._id}>{s.name}</option>
+        ))}
+      </select>
+    </div>
+
+    {/* FROM DATE */}
+    <div className="flex flex-col">
+      <label className="text-xs font-semibold text-gray-600 mb-1">From Date</label>
+      <DatePicker
+        selected={fromDate}
+        onChange={setFromDate}
+        className="border p-2 rounded w-full h-[42px]"
+        minDate={new Date()}
+      />
+    </div>
+
+    {/* TO DATE */}
+    <div className="flex flex-col">
+      <label className="text-xs font-semibold text-gray-600 mb-1">To Date</label>
+      <DatePicker
+        selected={toDate}
+        onChange={setToDate}
+        className="border p-2 rounded w-full h-[42px]"
+        minDate={fromDate}
+      />
+    </div>
+
+    {/* CAPACITY */}
+    <div className="flex flex-col">
+      <label className="text-xs font-semibold text-gray-600 mb-1">Capacity</label>
+      <input
+        type="number"
+        placeholder="Capacity"
+        value={capacity}
+        onChange={(e) => setCapacity(e.target.value)}
+        className="border p-2 rounded w-full h-[42px]"
+      />
+    </div>
+
+  </div>
+
+  {/* TIMES */}
+  <div className="mt-5">
+    <label className="text-xs font-semibold text-gray-600 mb-2 block">Select Time Slots</label>
+    <div className="grid grid-cols-4 gap-2">
+      {defaultTimes.map((t) => (
+        <button
+          key={t}
+          onClick={() => toggleTime(t)}
+          className={`rounded px-4 py-2 text-sm border 
+            ${selectedTimes.includes(t)
+              ? "bg-blue-600 text-white border-blue-700"
+              : "bg-gray-100 text-gray-800 border-gray-300"
+            }`}
+        >
+          {t}
+        </button>
+      ))}
+    </div>
+  </div>
+
+  {/* BUTTONS */}
+  <div className="mt-5 flex gap-3">
+    <button
+      onClick={handleSaveSlots}
+      className="bg-green-600 text-white px-5 py-2 rounded hover:bg-green-700 transition"
+    >
+      Save Slot
+    </button>
+
+    <button
+      onClick={resetForm}
+      className="bg-gray-300 px-5 py-2 rounded hover:bg-gray-400 transition"
+    >
+      Clear
+    </button>
+  </div>
 </div>
 
 
-        {/* Saved Slots List */}
-        <div className="bg-white rounded-3xl shadow-2xl p-6 mt-6 overflow-hidden">
-          <h3 className="text-xl font-semibold text-gray-700 mb-6 border-b pb-3">
-            📋 Saved Slots
-          </h3>
+      {/* SLOTS TABLE */}
+      <div className="bg-white p-6 rounded-xl shadow">
+        <h3 className="text-lg font-semibold mb-4">All Slots (Latest First)</h3>
 
-          {savedSlots.length === 0 ? (
-            <p className="text-gray-500 text-center py-6">
-              No slots added yet.
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full border-collapse">
-                <thead>
-                  <tr className="bg-gray-100 text-gray-600 text-sm">
-                    <th className="px-4 py-3 text-left border-b">Service</th>
-                    <th className="px-4 py-3 text-left border-b">From</th>
-                    <th className="px-4 py-3 text-left border-b">To</th>
-                    <th className="px-4 py-3 text-left border-b">Capacity</th>
-                    <th className="px-4 py-3 text-left border-b">Times</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {savedSlots.map((slot, index) => {
-                    const serviceName =
-                      services.find((s) => s._id === slot.serviceId)?.name || "-";
-                    return (
-                      <tr
-                        key={index}
-className="border-b border-gray-200 hover:bg-gray-50/50 transition-all text-sm whitespace-nowrap"                      >
-                        <td className="px-4 py-3">{serviceName}</td>
-                        <td className="px-4 py-3">{slot.from}</td>
-                        <td className="px-4 py-3">{slot.to}</td>
-                        <td className="px-4 py-3">{slot.capacity}</td>
-                        <td className="px-4 py-3">{slot.times.join(", ")}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+        <table className="w-full text-sm table-auto border-collapse">
+          <thead>
+            <tr className="bg-gray-200 text-left">
+              <th className="p-3">Service</th>
+              <th className="p-3">Date</th>
+              <th className="p-3">Start Time</th>
+              <th className="p-3">End Time</th>
+              <th className="p-3">Capacity</th>
+              <th className="p-3">Actions</th>
+            </tr>
+          </thead>
 
+          <tbody>
+            {savedSlots.map((slot) => (
+              <tr key={slot._id} className="border-b hover:bg-gray-50">
+                <td className="p-3 font-medium">{slot?.serviceId?.name || "Unknown"}</td>
+                <td className="p-3">{formatDate(slot.start)}</td>
+                <td className="p-3">{formatTime(slot.start)}</td>
+                <td className="p-3">{formatTime(slot.end)}</td>
+                <td className="p-3 font-semibold">{slot.capacity}</td>
 
+                <td className="p-3">
+                  <button
+                    onClick={() => deleteSlot(slot._id)}
+                    className="px-3 py-1 bg-red-200 text-red-700 rounded hover:bg-red-300"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+
+        </table>
       </div>
     </div>
   );

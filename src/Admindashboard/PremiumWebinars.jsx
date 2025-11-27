@@ -11,10 +11,12 @@ function PremiumWebinars() {
     const fetchWebinars = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${config.BASE_URL}orders/admin/paid/webinars`);
+        const response = await axios.get(
+          `${config.BASE_URL}orders/admin/paid/webinars`
+        );
 
         if (response.data.result?.items) {
-          console.log("Webinars data:", response.data.result.items);
+          console.log("Webinar Response:", response.data.result.items);
           setWebinars(response.data.result.items);
         } else {
           setError("No webinars found");
@@ -30,7 +32,6 @@ function PremiumWebinars() {
     fetchWebinars();
   }, []);
 
-  // ✅ Helper function to format date nicely
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
@@ -43,29 +44,64 @@ function PremiumWebinars() {
     });
   };
 
+  // 🔥 Auto-detect link function
+  const getLink = (item, keys) => {
+    for (let key of keys) {
+      if (item[key]) return item[key];
+    }
+    return null;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-6">
       <h1 className="text-3xl font-bold text-gray-800 text-center mb-10">
         🌐 Premium Webinars (All)
       </h1>
 
-      {loading && <p className="text-center text-gray-500">Loading webinars...</p>}
-      {error && <p className="text-center text-red-500 text-sm font-medium mt-4">{error}</p>}
+      {loading && (
+        <p className="text-center text-gray-500">Loading webinars...</p>
+      )}
+      {error && (
+        <p className="text-center text-red-500 text-sm font-medium mt-4">
+          {error}
+        </p>
+      )}
       {!loading && !error && webinars.length === 0 && (
         <p className="text-center text-gray-500">No premium webinars found.</p>
       )}
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
         {webinars.map((webinarData, index) => {
-          console.log('websinar ', webinarData)
           const order = webinarData.order || {};
           const user = webinarData.user?.result || {};
           const item = webinarData.item?.result || {};
 
+          // 🔥 AUTO-DETECT LINKS (multiple possibilities)
+          const googleMeetLink = getLink(item, [
+            "googleMeetLink",
+            "meetLink",
+            "google_link",
+            "gmeet",
+            "meetingLink",
+            "link",
+          ]);
+
+          const zoomLink = getLink(item, ["zoomLink", "zoom", "zoom_meeting"]);
+          const courseLink = getLink(item, [
+            "courseLink",
+            "course",
+            "materialLink",
+          ]);
+          const whatsappLink = getLink(item, [
+            "whatsappLink",
+            "whatsapp",
+            "waLink",
+          ]);
+
           return (
             <div
               key={index}
-              className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-all p-6 border border-gray-100 relative"
+              className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-all p-6 border border-gray-100"
             >
               {/* Header */}
               <div className="flex justify-between items-center mb-3">
@@ -82,34 +118,17 @@ function PremiumWebinars() {
                 {item.title || "Untitled Webinar"}
               </h2>
 
-
               <div className="text-sm text-gray-600 space-y-3">
-                {/* Webinar Details (always visible) */}
+                {/* Webinar Details */}
                 <div className="bg-yellow-50 rounded-lg p-3">
                   <p className="font-semibold text-yellow-700 mb-1">
                     📘 Webinar Details:
                   </p>
+
                   <p>
                     <span className="font-semibold">Date:</span>{" "}
                     {formatDate(item.date)}
                   </p>
-                  <div className="flex items-center space-x-2">
-                    <a
-                      href={item.googleMeetLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 underline break-all"
-                    >
-                      {item.googleMeetLink || "No link"}
-                    </a>
-                    <button
-                      onClick={() => navigator.clipboard.writeText(item.googleMeetLink)}
-                      className="text-sm text-gray-500 hover:text-gray-800"
-                    >
-                      Copy
-                    </button>
-                  </div>
-
                   <p>
                     <span className="font-semibold">Mode:</span>{" "}
                     {item.mode || "N/A"}
@@ -122,6 +141,31 @@ function PremiumWebinars() {
                     <span className="font-semibold">Price:</span> ₹
                     {item.price || "0"}
                   </p>
+
+                  {/* GOOGLE MEET (TESTING EXAMPLE) */}
+                  {/* <div className="flex items-center space-x-2">
+                    <a
+                      href={
+                        googleMeetLink || "https://meet.google.com/spo-yets-pkq" // 🔥 temporary test link
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 underline break-all"
+                    >
+                      {googleMeetLink || "https://meet.google.com/spo-yets-pkq"}
+                    </a>
+                    <button
+                      onClick={() =>
+                        navigator.clipboard.writeText(
+                          googleMeetLink ||
+                            "https://meet.google.com/spo-yets-pkq"
+                        )
+                      }
+                      className="text-xs text-gray-500 hover:text-gray-800"
+                    >
+                      Copy
+                    </button>
+                  </div> */}
                 </div>
 
                 {/* Order Info */}
@@ -137,10 +181,11 @@ function PremiumWebinars() {
                   <p>
                     <span className="font-semibold">Status:</span>{" "}
                     <span
-                      className={`${order.status === "paid"
-                        ? "text-green-600 font-semibold"
-                        : "text-red-500"
-                        }`}
+                      className={
+                        order.status === "paid"
+                          ? "text-green-600 font-semibold"
+                          : "text-red-500"
+                      }
                     >
                       {order.status || "N/A"}
                     </span>
@@ -154,10 +199,7 @@ function PremiumWebinars() {
                   <p>{user.email || "No email"}</p>
                   <p>{user.mobile || "No mobile"}</p>
                 </div>
-
-
               </div>
-
             </div>
           );
         })}

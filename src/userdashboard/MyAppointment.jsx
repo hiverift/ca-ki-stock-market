@@ -9,6 +9,11 @@ const MyAppointment = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  const handleCopy = (text) => {
+    navigator.clipboard.writeText(text);
+    alert("Meet link copied!");
+  };
+
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
@@ -24,18 +29,17 @@ const MyAppointment = () => {
         });
 
         const data = await res.json();
-        console.log("Appointments Data:", data);
 
         if (data.statusCode === 200 && data.result) {
-          // ✅ Extract appointments list
-          const allAppointments = data.result.appointments.map((a) => ({
-            ...a.details,
-            paid: a.latestOrder
-,           latestOrder: a.orders?.[a.orders.length - 1] || null,
-            itemType: "appointment",
-          }));
-          console.log("All Appointments:", allAppointments);
-          setAppointments(allAppointments);
+          const paidAppointments = data.result.appointments
+            .map((a) => ({
+              ...a.details,
+              latestOrder: a.orders?.[a.orders.length - 1] || null,
+              itemType: "appointment",
+            }))
+            .filter((a) => a.latestOrder?.status === "paid"); // only paid
+
+          setAppointments(paidAppointments);
         } else {
           setAppointments([]);
         }
@@ -50,10 +54,6 @@ const MyAppointment = () => {
     fetchAppointments();
   }, []);
 
-  // const handleItemClick = (appointment) => {
-  //   alert("Navigating to appointment details is not implemented yet.");
-  // };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -65,7 +65,7 @@ const MyAppointment = () => {
   if (appointments.length === 0) {
     return (
       <div className="flex items-center justify-center h-screen px-4">
-        <p className="text-gray-700 text-lg bg-yellow-100 font-sans px-6 py-4 flex justify-center items-center rounded shadow-md">
+        <p className="text-gray-700 text-lg bg-yellow-100 px-6 py-4 rounded shadow-md">
           You haven’t booked any appointments yet.
         </p>
       </div>
@@ -73,17 +73,16 @@ const MyAppointment = () => {
   }
 
   return (
-   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 space-y-6 md:ml-64">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 space-y-6 md:ml-64">
       <h1 className="text-2xl font-bold mb-6">My Appointments</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {appointments.map((appointment) => (
           <div
             key={appointment._id}
-            // onClick={() => handleItemClick(appointment)}
-            className="bg-white p-4 rounded-xl shadow-md border border-gray-200 flex flex-col cursor-pointer hover:shadow-lg transition"
+            className="bg-white p-4 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition"
           >
-            {/* ✅ Thumbnail / Video placeholder */}
+            {/* Thumbnail */}
             <div className="relative mb-4">
               {appointment.youtubeVideoId ? (
                 <img
@@ -101,34 +100,22 @@ const MyAppointment = () => {
               )}
             </div>
 
-            {/* ✅ Appointment Info */}
+            {/* Appointment Info */}
             <h2 className="font-semibold text-lg">
-              Appointment ID: {appointment._id.slice(-6)}
+              Appointment ID: {appointment._id?.slice(-6)}
             </h2>
 
             <p className="text-gray-600 mt-1">
               <strong>Status:</strong>{" "}
-              <span
-                className={
-                  appointment.latestOrder.status === "paid" || appointment.paid
-                    ? "text-green-600"
-                    : "text-red-600"
-                }
-              >
-                { appointment.latestOrder.status || ( appointment.latestOrder.status ? "paid" : "unpaid")}
+              <span className="text-green-600">
+                {appointment.latestOrder?.status}
               </span>
             </p>
 
             {appointment.amount && (
               <p className="text-gray-600 mt-1">
                 <strong>Amount:</strong> ₹
-                {new Intl.NumberFormat("en-IN", {
-                  style: "currency",
-                  currency: "INR",
-                  minimumFractionDigits: 0,
-                })
-                  .format(appointment.amount)
-                  .replace("₹", "")}
+                {appointment.amount}
               </p>
             )}
 
@@ -141,10 +128,37 @@ const MyAppointment = () => {
 
             {appointment.updatedAt && (
               <p className="text-gray-500 text-sm">
-                <strong>Last Update:</strong>{" "}
-                {moment(appointment.updatedAt).fromNow()}
+                <strong>Last Update:</strong> {moment(appointment.updatedAt).fromNow()}
               </p>
             )}
+
+            {/* Meet Link Section */}
+            <div className="mt-4 flex items-center gap-3">
+              {appointment.latestOrder?.status === "paid" &&
+              appointment.googleMeetLink ? (
+                <>
+                  <a
+                    href={appointment.googleMeetLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 bg-green-600 text-white rounded text-sm"
+                  >
+                    Join Meet
+                  </a>
+
+                  <button
+                    onClick={() => handleCopy(appointment.googleMeetLink)}
+                    className="px-3 py-2 border rounded text-sm"
+                  >
+                    Copy Link
+                  </button>
+                </>
+              ) : (
+                <div className="text-sm text-gray-500">
+                  Meet link will show after payment 
+                </div>
+              )}
+            </div>
           </div>
         ))}
       </div>
