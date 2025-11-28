@@ -70,7 +70,7 @@ const MyWebinars = () => {
 
     fetchWebinars();
   }, []);
-
+  console.log("Webinars to display:", webinars);
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -96,7 +96,8 @@ const MyWebinars = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 space-y-6 md:ml-64">
+   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 space-y-6">
+
 
       <h1 className="text-2xl font-bold mb-6">My Webinars</h1>
 

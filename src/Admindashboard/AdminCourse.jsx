@@ -1,8 +1,16 @@
 import React, { useEffect, useState, useMemo } from "react";
 
-import { Plus, Search, ChevronLeft, ChevronRight, X, Trash2, Edit } from "lucide-react";
+import {
+  Plus,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  X,
+  Trash2,
+  Edit,
+} from "lucide-react";
 import config from "../pages/config";
-import { toast } from "react-hot-toast"
+import { toast } from "react-hot-toast";
 import Swal from "sweetalert2";
 // import { X, Plus } from "lucide-react";
 
@@ -35,6 +43,8 @@ const AdminCourseTable = () => {
     categoryId: "",
     description: "",
     youtubeVideoId: "",
+    googleMeetLink: "", 
+    image: null,
   });
 
   // Fetch courses
@@ -87,7 +97,8 @@ const AdminCourseTable = () => {
         const res = await fetch(`${BASE_URL}categories/getAllSubcategory`, {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
-        if (!res.ok) throw new Error(`Failed to fetch subcategories: ${res.status}`);
+        if (!res.ok)
+          throw new Error(`Failed to fetch subcategories: ${res.status}`);
         const data = await res.json();
         setSubCategories(Array.isArray(data.result) ? data.result : []);
       } catch (err) {
@@ -99,7 +110,8 @@ const AdminCourseTable = () => {
   }, [formData.categoryId]);
 
   const filteredCourses = useMemo(() => {
-    const normalize = (str) => str?.toLowerCase().replace(/\s+/g, " ").trim() || "";
+    const normalize = (str) =>
+      str?.toLowerCase().replace(/\s+/g, " ").trim() || "";
     const query = normalize(searchQuery);
     return courses.filter(
       (c) =>
@@ -113,19 +125,24 @@ const AdminCourseTable = () => {
   const indexOfFirst = indexOfLast - coursesPerPage;
   const currentCourses = filteredCourses.slice(indexOfFirst, indexOfLast);
 
-
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]:
         name === "syllabus"
-          ? value.split(",").map((item) => item.trim()).filter(Boolean)
+          ? value
+              .split(",")
+              .map((item) => item.trim())
+              .filter(Boolean)
           : value,
     }));
 
     // ✅ Real-time validation
-    if (!value || (Array.isArray(formData[name]) && formData[name].length === 0)) {
+    if (
+      !value ||
+      (Array.isArray(formData[name]) && formData[name].length === 0)
+    ) {
       setErrors((prev) => ({ ...prev, [name]: "This field is required" }));
     } else {
       setErrors((prev) => {
@@ -204,100 +221,103 @@ const AdminCourseTable = () => {
   //   }
   // };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  // ✅ Validate all fields
-  const newErrors = {};
-  Object.keys(formData).forEach((field) => {
-    if (
-      formData[field] === "" ||
-      formData[field] === null ||
-      (Array.isArray(formData[field]) && formData[field].length === 0)
-    ) {
-      newErrors[field] = "This field is required";
-    }
-  });
-
-  if (Object.keys(newErrors).length > 0) {
-    setErrors(newErrors);
-    return;
-  }
-
-  setLoading(true);
-
-  try {
-    const url = editCourseId
-      ? `${BASE_URL}courses/${editCourseId}`
-      : `${BASE_URL}courses/createCrouses`;
-
-    const method = editCourseId ? "PUT" : "POST";
-    const form = new FormData();
-    form.append("itemType", "course");
-
-    for (let key in formData) {
-      if (key === "syllabus" && Array.isArray(formData[key])) {
-        form.append(key, JSON.stringify(formData[key]));
-      } else {
-        form.append(key, formData[key]);
+    // ✅ Validate all fields
+    const newErrors = {};
+    Object.keys(formData).forEach((field) => {
+      if (
+        formData[field] === "" ||
+        formData[field] === null ||
+        (Array.isArray(formData[field]) && formData[field].length === 0)
+      ) {
+        newErrors[field] = "This field is required";
       }
-    }
-
-    const accessToken = localStorage.getItem("accessToken");
-
-    const res = await fetch(url, {
-      method,
-      headers: { Authorization: `Bearer ${accessToken}` },
-      body: form,
     });
 
-    const data = await res.json();
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
 
-    if (res.ok) {
-      if (editCourseId) {
-        setCourses((prev) =>
-          prev.map((c) => (c._id === editCourseId ? data.result : c))
-        );
-      } else {
-        setCourses((prev) => [...prev, data.result]);
+    setLoading(true);
+
+    try {
+      const url = editCourseId
+        ? `${BASE_URL}courses/${editCourseId}`
+        : `${BASE_URL}courses/createCrouses`;
+
+      const method = editCourseId ? "PUT" : "POST";
+      const form = new FormData();
+      form.append("itemType", "course");
+
+      for (let key in formData) {
+        if (key === "syllabus") {
+          form.append(key, JSON.stringify(formData[key]));
+        } else if (key === "image") {
+          if (formData.image instanceof File) {
+            form.append("image", formData.image);
+          }
+        } else {
+          form.append(key, formData[key]);
+        }
       }
 
-      // ✅ Reset form
-      resetForm();
+      const accessToken = localStorage.getItem("accessToken");
 
-      // ✅ Show SweetAlert success
-      Swal.fire({
-        title: "Success!",
-        text: editCourseId
-          ? "Course updated successfully."
-          : "Course added successfully.",
-        icon: "success",
-        confirmButtonText: "OK",
-        confirmButtonColor: "#3085d6",
+      const res = await fetch(url, {
+        method,
+        headers: { Authorization: `Bearer ${accessToken}` },
+        body: form,
       });
-    } else {
+
+      const data = await res.json();
+
+      if (res.ok) {
+        if (editCourseId) {
+          setCourses((prev) =>
+            prev.map((c) => (c._id === editCourseId ? data.result : c))
+          );
+        } else {
+          setCourses((prev) => [...prev, data.result]);
+        }
+
+        // ✅ Reset form
+        resetForm();
+
+        // ✅ Show SweetAlert success
+        Swal.fire({
+          title: "Success!",
+          text: editCourseId
+            ? "Course updated successfully."
+            : "Course added successfully.",
+          icon: "success",
+          confirmButtonText: "OK",
+          confirmButtonColor: "#3085d6",
+        });
+      } else {
+        Swal.fire({
+          title: "Error!",
+          text: data.message || "Failed to save course.",
+          icon: "error",
+          confirmButtonText: "OK",
+          confirmButtonColor: "#d33",
+        });
+      }
+    } catch (err) {
+      console.error("Error submitting form:", err);
       Swal.fire({
         title: "Error!",
-        text: data.message || "Failed to save course.",
+        text: "Something went wrong.",
         icon: "error",
         confirmButtonText: "OK",
         confirmButtonColor: "#d33",
       });
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    console.error("Error submitting form:", err);
-    Swal.fire({
-      title: "Error!",
-      text: "Something went wrong.",
-      icon: "error",
-      confirmButtonText: "OK",
-      confirmButtonColor: "#d33",
-    });
-  } finally {
-    setLoading(false);
-  }
-};
-
+  };
 
   const handleEdit = (course) => {
     setFormData({
@@ -312,6 +332,8 @@ const handleSubmit = async (e) => {
       studentsCount: course.studentsCount || "",
       description: course.description || "",
       youtubeVideoId: course.youtubeVideoId || "",
+      image: course.image || null,
+      googleMeetLink: course.googleMeetLink || "",
     });
     setEditCourseId(course.id || course._id);
     setShowForm(true);
@@ -386,7 +408,9 @@ const handleSubmit = async (e) => {
         });
 
         if (res.ok) {
-          setCourses((prev) => prev.filter((c) => c.id !== courseId && c._id !== courseId));
+          setCourses((prev) =>
+            prev.filter((c) => c.id !== courseId && c._id !== courseId)
+          );
 
           Swal.fire({
             toast: true,
@@ -435,8 +459,6 @@ const handleSubmit = async (e) => {
     }
   };
 
-
-
   const resetForm = () => {
     setFormData({
       title: "",
@@ -450,6 +472,7 @@ const handleSubmit = async (e) => {
       studentsCount: "",
       description: "",
       youtubeVideoId: "",
+      googleMeetLink: "",
     });
     setEditCourseId(null);
     setErrors({});
@@ -496,7 +519,6 @@ const handleSubmit = async (e) => {
 
       {/* Table */}
       <div className="overflow-x-auto bg-white rounded-xl shadow">
-
         <div className="overflow-x-auto bg-white rounded-xl shadow">
           <table className="min-w-full border-collapse">
             <thead>
@@ -513,7 +535,8 @@ const handleSubmit = async (e) => {
                 currentCourses.map((course, index) => (
                   <tr
                     key={course._id}
-                    className="border-b border-gray-200 hover:bg-gray-50/50 transition-all text-sm whitespace-nowrap"                  >
+                    className="border-b border-gray-200 hover:bg-gray-50/50 transition-all text-sm whitespace-nowrap"
+                  >
                     <td className="px-4 py-3">{indexOfFirst + index + 1}</td>
                     <td className="px-4 py-3">{course.title}</td>
                     <td className="px-4 py-3">{course.instructor}</td>
@@ -536,7 +559,6 @@ const handleSubmit = async (e) => {
                         </button>
                       </div>
                     </td>
-
                   </tr>
                 ))
               ) : (
@@ -552,8 +574,6 @@ const handleSubmit = async (e) => {
             </tbody>
           </table>
         </div>
-
-
       </div>
 
       {/* Pagination */}
@@ -580,7 +600,6 @@ const handleSubmit = async (e) => {
       )}
 
       {/* Add/Edit Form Modal */}
-      {/* Add/Edit Form Modal */}
       {showForm && (
         <div
           className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
@@ -603,7 +622,48 @@ const handleSubmit = async (e) => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Title & Instructor */}
+              {/* IMAGE UPLOAD */}
+              <div>
+                <label className="font-semibold text-gray-700">
+                  Course Image <span className="text-red-500">*</span>
+                </label>
+
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      image: e.target.files[0],
+                    }))
+                  }
+                  className="w-full border px-3 py-2 rounded-xl mt-1"
+                />
+
+                {/* IMAGE PREVIEW */}
+                {formData.image && typeof formData.image === "string" && (
+                  <img
+                    src={formData.image}
+                    alt="Preview"
+                    className="w-28 h-20 object-cover rounded mt-2 border"
+                  />
+                )}
+
+                {/* Preview for uploaded new file */}
+                {formData.image && formData.image instanceof File && (
+                  <img
+                    src={URL.createObjectURL(formData.image)}
+                    alt="Preview"
+                    className="w-28 h-20 object-cover rounded mt-2 border"
+                  />
+                )}
+
+                {errors.image && (
+                  <p className="text-red-500 text-sm mt-1">{errors.image}</p>
+                )}
+              </div>
+
+              {/* TITLE & INSTRUCTOR */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="font-semibold text-gray-700">
@@ -633,12 +693,14 @@ const handleSubmit = async (e) => {
                     className="w-full border px-3 py-2 rounded-xl"
                   />
                   {errors.instructor && (
-                    <p className="text-red-500 text-sm mt-1">{errors.instructor}</p>
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.instructor}
+                    </p>
                   )}
                 </div>
               </div>
 
-              {/* Price & Duration */}
+              {/* PRICE & DURATION */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="font-semibold text-gray-700">
@@ -647,7 +709,6 @@ const handleSubmit = async (e) => {
                   <input
                     type="number"
                     name="price"
-                    min="0"
                     value={formData.price}
                     onChange={handleInputChange}
                     className="w-full border px-3 py-2 rounded-xl"
@@ -669,12 +730,14 @@ const handleSubmit = async (e) => {
                     className="w-full border px-3 py-2 rounded-xl"
                   />
                   {errors.duration && (
-                    <p className="text-red-500 text-sm mt-1">{errors.duration}</p>
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.duration}
+                    </p>
                   )}
                 </div>
               </div>
 
-              {/* Rating & Students Count */}
+              {/* RATING & STUDENTS */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="font-semibold text-gray-700">
@@ -713,7 +776,7 @@ const handleSubmit = async (e) => {
                 </div>
               </div>
 
-              {/* YouTube Video ID & Syllabus */}
+              {/* YOUTUBE ID & SYLLABUS */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="font-semibold text-gray-700">
@@ -746,12 +809,14 @@ const handleSubmit = async (e) => {
                     className="w-full border px-3 py-2 rounded-xl"
                   />
                   {errors.syllabus && (
-                    <p className="text-red-500 text-sm mt-1">{errors.syllabus}</p>
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.syllabus}
+                    </p>
                   )}
                 </div>
               </div>
 
-              {/* Description */}
+              {/* DESCRIPTION */}
               <div>
                 <label className="font-semibold text-gray-700">
                   Description <span className="text-red-500">*</span>
@@ -764,11 +829,27 @@ const handleSubmit = async (e) => {
                   className="w-full border px-3 py-2 rounded-xl"
                 ></textarea>
                 {errors.description && (
-                  <p className="text-red-500 text-sm mt-1">{errors.description}</p>
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.description}
+                  </p>
                 )}
               </div>
 
-              {/* Actions */}
+              <div>
+  <label className="font-semibold text-gray-700">
+    Google Meet Link
+  </label>
+  <input
+    type="text"
+    name="googleMeetLink"
+    value={formData.googleMeetLink}
+    onChange={handleInputChange}
+    placeholder="https://meet.google.com/abc-defg-hij"
+    className="w-full border px-3 py-2 rounded-xl"
+  />
+</div>
+
+              {/* ACTION BUTTONS */}
               <div className="flex justify-end gap-4 mt-4">
                 <button
                   type="button"
@@ -789,8 +870,6 @@ const handleSubmit = async (e) => {
           </div>
         </div>
       )}
-
-
     </div>
   );
 };

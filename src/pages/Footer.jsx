@@ -1,4 +1,15 @@
-import { MapPin, Phone, Mail, Home, BookOpen, Users, HelpCircle, Shield, FileText, Headphones } from "lucide-react";
+import {
+  MapPin,
+  Phone,
+  Mail,
+  Home,
+  BookOpen,
+  Users,
+  HelpCircle,
+  Shield,
+  FileText,
+  Headphones,
+} from "lucide-react";
 
 export default function Footer() {
   return (
@@ -6,29 +17,32 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto">
         {/* Main Footer Content */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
-          
           {/* Company Info */}
           <div className="space-y-4">
-            <h3 className="text-xl font-bold text-yellow-400 mb-6">CA ki Stock Market</h3>
-            
+            <h3 className="text-xl font-bold text-yellow-400 mb-6">
+              CA ki Stock Market
+            </h3>
+
             <div className="space-y-3">
-              <div className="flex items-start space-x-3">
+              {/* <div className="flex items-start space-x-3">
                 <MapPin className="w-5 h-5 text-yellow-400 mt-1 flex-shrink-0" />
                 <div className="text-sm text-gray-300">
                   <p>CA GLH 16/1 Kaju Nagar</p>
                   <p>G BLOCK NEAR GURUDWARA</p>
                   <p>GHAZIABAD-201002 INDIA</p>
                 </div>
-              </div>
-              
+              </div> */}
+
               <div className="flex items-center space-x-3">
                 <Phone className="w-5 h-5 text-yellow-400" />
                 <span className="text-sm text-gray-300">+91 96675 20027</span>
               </div>
-              
+
               <div className="flex items-center space-x-3">
                 <Mail className="w-5 h-5 text-yellow-400" />
-                <span className="text-sm text-gray-300">info@accountantskipathshala.com</span>
+                <span className="text-sm text-gray-300">
+                  info@accountantskipathshala.com
+                </span>
               </div>
             </div>
           </div>
@@ -38,31 +52,46 @@ export default function Footer() {
             <h4 className="text-lg font-semibold mb-6">Site Map</h4>
             <ul className="space-y-3">
               <li>
-                <a href="#" className="flex items-center space-x-2 text-gray-300 hover:text-yellow-400 transition-colors">
+                <a
+                  href="#"
+                  className="flex items-center space-x-2 text-gray-300 hover:text-yellow-400 transition-colors"
+                >
                   <Home className="w-4 h-4" />
                   <span className="text-sm">Home</span>
                 </a>
               </li>
               <li>
-                <a href="/courses" className="flex items-center space-x-2 text-gray-300 hover:text-yellow-400 transition-colors">
+                <a
+                  href="/courses"
+                  className="flex items-center space-x-2 text-gray-300 hover:text-yellow-400 transition-colors"
+                >
                   <BookOpen className="w-4 h-4" />
                   <span className="text-sm">Courses</span>
                 </a>
               </li>
               <li>
-                <a href="/" className="flex items-center space-x-2 text-gray-300 hover:text-yellow-400 transition-colors">
+                <a
+                  href="/"
+                  className="flex items-center space-x-2 text-gray-300 hover:text-yellow-400 transition-colors"
+                >
                   <Users className="w-4 h-4" />
                   <span className="text-sm">Our Mentors</span>
                 </a>
               </li>
               <li>
-                <a href="#" className="flex items-center space-x-2 text-gray-300 hover:text-yellow-400 transition-colors">
+                <a
+                  href="#"
+                  className="flex items-center space-x-2 text-gray-300 hover:text-yellow-400 transition-colors"
+                >
                   <Users className="w-4 h-4" />
                   <span className="text-sm">Our Organization</span>
                 </a>
               </li>
               <li>
-                <a href="/faq" className="flex items-center space-x-2 text-gray-300 hover:text-yellow-400 transition-colors">
+                <a
+                  href="/faq"
+                  className="flex items-center space-x-2 text-gray-300 hover:text-yellow-400 transition-colors"
+                >
                   <HelpCircle className="w-4 h-4" />
                   <span className="text-sm">FAQ</span>
                 </a>
@@ -75,25 +104,37 @@ export default function Footer() {
             <h4 className="text-lg font-semibold mb-6">Resources</h4>
             <ul className="space-y-3">
               <li>
-                <a href="#" className="flex items-center space-x-2 text-gray-300 hover:text-yellow-400 transition-colors">
+                <a
+                  href="#"
+                  className="flex items-center space-x-2 text-gray-300 hover:text-yellow-400 transition-colors"
+                >
                   <Users className="w-4 h-4" />
                   <span className="text-sm">Testimonials</span>
                 </a>
               </li>
               <li>
-                <a href="#" className="flex items-center space-x-2 text-gray-300 hover:text-yellow-400 transition-colors">
+                <a
+                  href="#"
+                  className="flex items-center space-x-2 text-gray-300 hover:text-yellow-400 transition-colors"
+                >
                   <Shield className="w-4 h-4" />
                   <span className="text-sm">Privacy Policy</span>
                 </a>
               </li>
               <li>
-                <a href="#" className="flex items-center space-x-2 text-gray-300 hover:text-yellow-400 transition-colors">
+                <a
+                  href="#"
+                  className="flex items-center space-x-2 text-gray-300 hover:text-yellow-400 transition-colors"
+                >
                   <FileText className="w-4 h-4" />
                   <span className="text-sm">Terms of Service</span>
                 </a>
               </li>
               <li>
-                <a href="/Contact" className="flex items-center space-x-2 text-gray-300 hover:text-yellow-400 transition-colors">
+                <a
+                  href="/Contact"
+                  className="flex items-center space-x-2 text-gray-300 hover:text-yellow-400 transition-colors"
+                >
                   <Headphones className="w-4 h-4" />
                   <span className="text-sm">Contact Support</span>
                 </a>
@@ -127,7 +168,15 @@ export default function Footer() {
               © CA ki Stock Market | All Rights Reserved
             </div>
             <div className="text-sm text-gray-400">
-              Designed By <span className="text-yellow-400 font-semibold">HireRit</span>
+              Designed By{" "}
+              <a
+                href="https://hiverift.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-yellow-400 font-semibold hover:underline"
+              >
+                hiverift.com
+              </a>
             </div>
           </div>
         </div>

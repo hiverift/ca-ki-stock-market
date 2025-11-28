@@ -54,7 +54,9 @@ const MyCourses = () => {
               course.details.googleMeetLink ||
               course.details.liveLink ||
               course.details.meetLink ||
+              
               null;
+              
 
             return [
               {
@@ -110,7 +112,8 @@ const MyCourses = () => {
   }
 
   return (
-    <div className="min-h-screen md:ml-64 px-4 sm:px-6 lg:px-8 mt-10 space-y-6">
+   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 space-y-6">
+
       <h1 className="text-2xl md:text-3xl font-semibold text-gray-900 mb-6">
         My Enrolled Courses
       </h1>

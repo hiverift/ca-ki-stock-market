@@ -91,12 +91,12 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       {/* Sidebar */}
       <div
         className={`fixed top-0 left-0 h-screen bg-white shadow-md z-40 
-  w-64 flex flex-col py-6 px-4
-  transform 
-  ${isOpen ? "translate-x-0" : "-translate-x-full"} 
-  md:translate-x-0
-  md:transform-none  /* ← IMPORTANT: No animation on desktop */
-  transition-transform duration-300 md:duration-0`}
+        w-64 flex flex-col py-6 px-4
+        transform 
+        ${isOpen ? "translate-x-0" : "-translate-x-full"} 
+        md:translate-x-0
+        md:transform-none
+        transition-transform duration-300 md:duration-0`}
       >
         <div className="flex-1 overflow-y-auto">
           <h1
@@ -111,7 +111,11 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
               <NavLink
                 key={idx}
                 to={item.path}
-                onClick={() => setIsOpen(false)} // close sidebar on mobile
+                onClick={() => {
+                  if (window.innerWidth < 768) {
+                    setIsOpen(false); // close only on mobile
+                  }
+                }}
                 className={({ isActive }) =>
                   `flex items-center gap-3 py-2 px-3 rounded-md transition font-medium ${
                     isActive
@@ -129,7 +133,6 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
         {/* Footer buttons */}
         <div className="flex flex-col gap-3 mt-6">
-          {/* Back to Home button */}
           <button
             onClick={handleGoHome}
             className="flex items-center gap-3 py-2 px-3 rounded-md hover:bg-blue-100 transition text-blue-600 font-medium"
@@ -138,7 +141,6 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
             <span>Back to Home</span>
           </button>
 
-          {/* Logout button (only if logged in) */}
           {isLoggedIn && (
             <button
               onClick={handleLogout}
@@ -151,7 +153,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         </div>
       </div>
 
-      {/* Overlay for mobile */}
+      {/* Mobile overlay */}
       {isOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-20 z-30 md:hidden"

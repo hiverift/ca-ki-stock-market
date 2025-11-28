@@ -394,7 +394,7 @@ const ProfileKYC = () => {
 
   // Render Sidebar
   const renderSidebar = () => (
-    <div className="space-y-8">
+   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 space-y-6">
       <div className="bg-gray-50 rounded-lg p-6 shadow border border-gray-300">
         <h3 className="text-lg text-gray-900 mb-6">Account Summary</h3>
         <div className="space-y-4">

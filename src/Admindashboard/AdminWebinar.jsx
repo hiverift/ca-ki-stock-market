@@ -27,6 +27,7 @@ const AdminWebinarTable = () => {
     youtubeVideoId: "",
     categoryId: "",
     subCategoryId: "",
+    thumbnail: null,
   });
 
   // Fetch webinars from API
@@ -131,6 +132,7 @@ const AdminWebinarTable = () => {
   const handleSaveWebinar = async () => {
     // ----------------- Validation -----------------
     const newErrors = {};
+
     if (!newWebinar.title) newErrors.title = "Title is required";
     if (!newWebinar.googleMeetLink)
       newErrors.googleMeetLink = "googleMeetLink is required";
@@ -161,6 +163,9 @@ const AdminWebinarTable = () => {
 
       // ----------------- Prepare FormData -----------------
       const form = new FormData();
+      if (newWebinar.thumbnail) {
+        form.append("thumbnail", newWebinar.thumbnail);
+      }
       form.append("itemType", "webinar");
       form.append("title", newWebinar.title);
       form.append("presenter", newWebinar.presenter);
@@ -216,6 +221,7 @@ const AdminWebinarTable = () => {
         googleMeetLink: "",
         categoryId: "",
         subCategoryId: "",
+        thumbnail: null,
       });
       setEditId(null);
       setShowForm(false);
@@ -250,6 +256,7 @@ const AdminWebinarTable = () => {
       youtubeVideoId: webinar.youtubeVideoId || "",
       categoryId: webinar.categoryId || "",
       subCategoryId: webinar.subCategoryId || "",
+      thumbnail: webinar.thumbnail || null,
     });
     setEditId(webinar._id);
     setShowForm(true);
@@ -449,6 +456,7 @@ const AdminWebinarTable = () => {
       {showDetail && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-y-auto max-h-[90vh] p-6 space-y-4">
+            {/* Header */}
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-xl font-semibold">Webinar Details</h3>
               <button
@@ -460,31 +468,48 @@ const AdminWebinarTable = () => {
             </div>
 
             <div className="space-y-2">
+              {/* ⭐ Thumbnail Preview Added Here */}
+              {showDetail.thumbnail && (
+                <img
+                  src={showDetail.thumbnail}
+                  alt="Thumbnail"
+                  className="w-full h-48 object-cover rounded mb-3"
+                />
+              )}
+
               <p>
                 <strong>Title:</strong> {showDetail.title}
               </p>
+
               <p>
                 <strong>Presenter:</strong> {showDetail.presenter}
               </p>
+
               <p>
                 <strong>Description:</strong> {showDetail.description}
               </p>
+
               <p>
                 <strong>Start Date:</strong>{" "}
                 {new Date(showDetail.startDate).toLocaleString()}
               </p>
+
               <p>
                 <strong>Duration:</strong> {showDetail.durationMinutes} mins
               </p>
+
               <p>
                 <strong>Price:</strong> {showDetail.price}
               </p>
+
               <p>
                 <strong>Status:</strong> {showDetail.status}
               </p>
+
               <p>
                 <strong>YouTube Video ID:</strong> {showDetail.youtubeVideoId}
               </p>
+
               <div>
                 <strong>Agenda:</strong>
                 <ul className="list-disc pl-5">
@@ -495,6 +520,7 @@ const AdminWebinarTable = () => {
               </div>
             </div>
 
+            {/* Footer */}
             <div className="flex justify-end mt-4">
               <button
                 onClick={() => setShowDetail(null)}
@@ -508,291 +534,305 @@ const AdminWebinarTable = () => {
       )}
 
       {/* Add/Edit Modal */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl overflow-y-auto max-h-[90vh] p-6 space-y-4">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="text-xl font-semibold">
-                {editId ? "Edit Webinar" : "Add Webinar"}
-              </h3>
-              <button
-                onClick={() => setShowForm(false)}
-                className="p-2 hover:bg-gray-100 rounded-full"
-              >
-                <X size={20} />
-              </button>
-            </div>
+    {showForm && (
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl overflow-y-auto max-h-[90vh] p-6">
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Title */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Title <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="Enter webinar title"
-                  value={newWebinar.title}
-                  onChange={(e) =>
-                    setNewWebinar({ ...newWebinar, title: e.target.value })
-                  }
-                  className={`border px-3 py-2 rounded w-full ${
-                    errors.title ? "border-red-500" : ""
-                  }`}
-                />
-                {errors.title && (
-                  <p className="text-red-500 text-sm mt-1">{errors.title}</p>
-                )}
-              </div>
+      {/* Header */}
+      <div className="flex justify-between items-center mb-5">
+        <h3 className="text-xl font-semibold">
+          {editId ? "Edit Webinar" : "Add Webinar"}
+        </h3>
+        <button
+          onClick={() => setShowForm(false)}
+          className="p-2 hover:bg-gray-100 rounded-full"
+        >
+          <X size={20} />
+        </button>
+      </div>
 
-              {/* Presenter */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Presenter <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="Enter presenter name"
-                  value={newWebinar.presenter}
-                  onChange={(e) =>
-                    setNewWebinar({ ...newWebinar, presenter: e.target.value })
-                  }
-                  className={`border px-3 py-2 rounded w-full ${
-                    errors.presenter ? "border-red-500" : ""
-                  }`}
-                />
-                {errors.presenter && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.presenter}
-                  </p>
-                )}
-              </div>
+      {/* Thumbnail Section */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Webinar Thumbnail <span className="text-red-500">*</span>
+        </label>
 
-              {/* YouTube Video ID */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  YouTube Video ID <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="Enter YouTube video ID"
-                  value={newWebinar.youtubeVideoId}
-                  onChange={(e) =>
-                    setNewWebinar({
-                      ...newWebinar,
-                      youtubeVideoId: e.target.value,
-                    })
-                  }
-                  className={`border px-3 py-2 rounded w-full ${
-                    errors.youtubeVideoId ? "border-red-500" : ""
-                  }`}
-                />
-                {errors.youtubeVideoId && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.youtubeVideoId}
-                  </p>
-                )}
-              </div>
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) =>
+            setNewWebinar({ ...newWebinar, thumbnail: e.target.files[0] })
+          }
+          className="border px-3 py-2 rounded w-full"
+        />
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Google Meet Link <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="Enter Google Meet link"
-                  value={newWebinar.googleMeetLink}
-                  onChange={(e) =>
-                    setNewWebinar({
-                      ...newWebinar,
-                      googleMeetLink: e.target.value,
-                    })
-                  }
-                  className={`border px-3 py-2 rounded w-full ${
-                    errors.googleMeetLink ? "border-red-500" : ""
-                  }`}
-                />
-                {errors.googleMeetLink && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.googleMeetLink}
-                  </p>
-                )}
-              </div>
-
-              {/* Start Date */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Start Date & Time <span className="text-red-500">*</span>
-                </label>
-                <DatePicker
-                  selected={newWebinar.startDate}
-                  onChange={(date) =>
-                    setNewWebinar({ ...newWebinar, startDate: date })
-                  }
-                  showTimeSelect
-                  dateFormat="Pp"
-                  className={`border px-3 py-2 rounded w-full ${
-                    errors.startDate ? "border-red-500" : ""
-                  }`}
-                />
-                {errors.startDate && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.startDate}
-                  </p>
-                )}
-              </div>
-
-              {/* Duration */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Duration (minutes) <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  placeholder="Enter duration"
-                  value={newWebinar.durationMinutes}
-                  onChange={(e) =>
-                    setNewWebinar({
-                      ...newWebinar,
-                      durationMinutes: e.target.value,
-                    })
-                  }
-                  className={`border px-3 py-2 rounded w-full ${
-                    errors.durationMinutes ? "border-red-500" : ""
-                  }`}
-                />
-                {errors.durationMinutes && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.durationMinutes}
-                  </p>
-                )}
-              </div>
-
-              {/* Price */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Price <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  placeholder="Enter price"
-                  value={newWebinar.price}
-                  onChange={(e) =>
-                    setNewWebinar({ ...newWebinar, price: e.target.value })
-                  }
-                  className={`border px-3 py-2 rounded w-full ${
-                    errors.price ? "border-red-500" : ""
-                  }`}
-                />
-                {errors.price && (
-                  <p className="text-red-500 text-sm mt-1">{errors.price}</p>
-                )}
-              </div>
-
-              {/* Status */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Status <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={newWebinar.status}
-                  onChange={(e) =>
-                    setNewWebinar({ ...newWebinar, status: e.target.value })
-                  }
-                  className={`border px-3 py-2 rounded w-full ${
-                    errors.status ? "border-red-500" : ""
-                  }`}
-                >
-                  <option value="">Select Status</option>
-                  <option value="Upcoming">Upcoming</option>
-                  <option value="Live">Live</option>
-                  <option value="Recorded">Recorded</option>
-                </select>
-                {errors.status && (
-                  <p className="text-red-500 text-sm mt-1">{errors.status}</p>
-                )}
-              </div>
-
-              {/* Description */}
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  placeholder="Enter description"
-                  value={newWebinar.description}
-                  onChange={(e) =>
-                    setNewWebinar({
-                      ...newWebinar,
-                      description: e.target.value,
-                    })
-                  }
-                  className={`border px-3 py-2 rounded w-full ${
-                    errors.description ? "border-red-500" : ""
-                  }`}
-                />
-                {errors.description && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.description}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Agenda */}
-            <div className="mt-2">
-              <h4 className="font-semibold mb-1">Agenda</h4>
-              <div className="flex gap-2 mb-2">
-                <input
-                  type="text"
-                  placeholder="Add Agenda Item"
-                  value={newWebinar.newAgenda}
-                  onChange={(e) =>
-                    setNewWebinar({ ...newWebinar, newAgenda: e.target.value })
-                  }
-                  className="border px-3 py-2 rounded w-full"
-                />
-                <button
-                  onClick={addAgenda}
-                  className="bg-blue-500 text-white px-4 rounded hover:bg-blue-600"
-                >
-                  Add
-                </button>
-              </div>
-              <ul className="list-disc pl-5">
-                {newWebinar.agenda.map((a, idx) => (
-                  <li key={idx} className="flex justify-between items-center">
-                    {a}{" "}
-                    <button
-                      onClick={() => removeAgenda(idx)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      Remove
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="flex justify-end gap-4 mt-4">
-              <button
-                onClick={() => setShowForm(false)}
-                className="px-4 py-2 border rounded hover:bg-gray-100"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveWebinar}
-                className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
-              >
-                {editId ? "Update" : "Save"}
-              </button>
-            </div>
+        {/* Preview */}
+        {newWebinar.thumbnail && (
+          <div className="mt-3">
+            {typeof newWebinar.thumbnail === "string" ? (
+              <img
+                src={newWebinar.thumbnail}
+                alt="Thumbnail"
+                className="h-24 w-24 rounded object-cover border"
+              />
+            ) : (
+              <img
+                src={URL.createObjectURL(newWebinar.thumbnail)}
+                alt="Thumbnail"
+                className="h-24 w-24 rounded object-cover border"
+              />
+            )}
           </div>
+        )}
+      </div>
+
+      {/* Basic Details Section */}
+      {/* <h4 className="font-semibold mt-6 mb-2 text-gray-700">Basic Details</h4> */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+        {/* Title */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Title <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            placeholder="Enter webinar title"
+            value={newWebinar.title}
+            onChange={(e) =>
+              setNewWebinar({ ...newWebinar, title: e.target.value })
+            }
+            className={`border px-3 py-2 rounded w-full ${errors.title ? "border-red-500" : ""}`}
+          />
+          {errors.title && <p className="text-red-500 text-sm">{errors.title}</p>}
         </div>
-      )}
+
+        {/* Presenter */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Presenter <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            placeholder="Enter presenter name"
+            value={newWebinar.presenter}
+            onChange={(e) =>
+              setNewWebinar({ ...newWebinar, presenter: e.target.value })
+            }
+            className={`border px-3 py-2 rounded w-full ${errors.presenter ? "border-red-500" : ""}`}
+          />
+          {errors.presenter && (
+            <p className="text-red-500 text-sm">{errors.presenter}</p>
+          )}
+        </div>
+
+        {/* YouTube ID */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            YouTube Video ID <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            placeholder="Enter YouTube Video ID"
+            value={newWebinar.youtubeVideoId}
+            onChange={(e) =>
+              setNewWebinar({
+                ...newWebinar,
+                youtubeVideoId: e.target.value,
+              })
+            }
+            className={`border px-3 py-2 rounded w-full ${errors.youtubeVideoId ? "border-red-500" : ""}`}
+          />
+          {errors.youtubeVideoId && (
+            <p className="text-red-500 text-sm">{errors.youtubeVideoId}</p>
+          )}
+        </div>
+
+        {/* Google Meet Link */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Google Meet Link <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            placeholder="Enter Meet Link"
+            value={newWebinar.googleMeetLink}
+            onChange={(e) =>
+              setNewWebinar({
+                ...newWebinar,
+                googleMeetLink: e.target.value,
+              })
+            }
+            className={`border px-3 py-2 rounded w-full ${errors.googleMeetLink ? "border-red-500" : ""}`}
+          />
+          {errors.googleMeetLink && (
+            <p className="text-red-500 text-sm">{errors.googleMeetLink}</p>
+          )}
+        </div>
+
+        {/* Start Date */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Start Date & Time <span className="text-red-500">*</span>
+          </label>
+          <DatePicker
+            selected={newWebinar.startDate}
+            onChange={(date) =>
+              setNewWebinar({ ...newWebinar, startDate: date })
+            }
+            showTimeSelect
+            dateFormat="Pp"
+            className={`border px-3 py-2 rounded w-full ${errors.startDate ? "border-red-500" : ""}`}
+          />
+          {errors.startDate && (
+            <p className="text-red-500 text-sm">{errors.startDate}</p>
+          )}
+        </div>
+
+        {/* Duration */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Duration (minutes) <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="number"
+            min="1"
+            placeholder="Enter duration"
+            value={newWebinar.durationMinutes}
+            onChange={(e) =>
+              setNewWebinar({
+                ...newWebinar,
+                durationMinutes: e.target.value,
+              })
+            }
+            className={`border px-3 py-2 rounded w-full ${errors.durationMinutes ? "border-red-500" : ""}`}
+          />
+          {errors.durationMinutes && (
+            <p className="text-red-500 text-sm">{errors.durationMinutes}</p>
+          )}
+        </div>
+
+        {/* Price */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Price <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="number"
+            min="0"
+            placeholder="Enter price"
+            value={newWebinar.price}
+            onChange={(e) =>
+              setNewWebinar({ ...newWebinar, price: e.target.value })
+            }
+            className={`border px-3 py-2 rounded w-full ${errors.price ? "border-red-500" : ""}`}
+          />
+          {errors.price && (
+            <p className="text-red-500 text-sm">{errors.price}</p>
+          )}
+        </div>
+
+        {/* Status */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Status <span className="text-red-500">*</span>
+          </label>
+          <select
+            value={newWebinar.status}
+            onChange={(e) =>
+              setNewWebinar({ ...newWebinar, status: e.target.value })
+            }
+            className={`border px-3 py-2 rounded w-full ${errors.status ? "border-red-500" : ""}`}
+          >
+            <option value="">Select Status</option>
+            <option value="Upcoming">Upcoming</option>
+            <option value="Live">Live</option>
+            <option value="Recorded">Recorded</option>
+          </select>
+          {errors.status && (
+            <p className="text-red-500 text-sm">{errors.status}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Description */}
+      <div className="mt-4">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Description <span className="text-red-500">*</span>
+        </label>
+        <textarea
+          placeholder="Enter description"
+          value={newWebinar.description}
+          onChange={(e) =>
+            setNewWebinar({ ...newWebinar, description: e.target.value })
+          }
+          className={`border px-3 py-2 rounded w-full h-24 ${errors.description ? "border-red-500" : ""}`}
+        />
+        {errors.description && (
+          <p className="text-red-500 text-sm">{errors.description}</p>
+        )}
+      </div>
+
+      {/* Agenda Section */}
+      <div className="mt-4">
+        <h4 className="font-semibold text-gray-700 mb-2">Agenda</h4>
+
+        <div className="flex gap-2 mb-3">
+          <input
+            type="text"
+            placeholder="Add agenda item"
+            value={newWebinar.newAgenda}
+            onChange={(e) =>
+              setNewWebinar({ ...newWebinar, newAgenda: e.target.value })
+            }
+            className="border px-3 py-2 rounded w-full"
+          />
+          <button
+            onClick={addAgenda}
+            className="bg-blue-500 text-white px-4 rounded hover:bg-blue-600"
+          >
+            Add
+          </button>
+        </div>
+
+        <ul className="space-y-1">
+          {newWebinar.agenda.map((item, idx) => (
+            <li
+              key={idx}
+              className="flex justify-between items-center bg-gray-100 px-3 py-2 rounded"
+            >
+              <span>{item}</span>
+              <button
+                onClick={() => removeAgenda(idx)}
+                className="text-red-500 hover:text-red-700 text-sm"
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Buttons */}
+      <div className="flex justify-end gap-4 mt-6">
+        <button
+          onClick={() => setShowForm(false)}
+          className="px-4 py-2 border rounded hover:bg-gray-100"
+        >
+          Cancel
+        </button>
+
+        <button
+          onClick={handleSaveWebinar}
+          className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+        >
+          {editId ? "Update" : "Save"}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   );
 };

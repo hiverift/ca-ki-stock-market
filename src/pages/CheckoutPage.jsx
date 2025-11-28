@@ -4,6 +4,7 @@ import axios from "axios";
 import Swal from "sweetalert2";
 import { FaCheck, FaLock, FaTag } from "react-icons/fa";
 import config from "./config";
+import checkoutImage from "../assets/image/checkout page.png";
 
 const razorpayKey = "rzp_live_ReNg1FQibGawr8";
 const fallbackThumb = "/fallback-course.png";
@@ -82,7 +83,7 @@ export default function CheckoutPage() {
   const [loadingPayment, setLoadingPayment] = useState(false);
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [errors, setErrors] = useState({});
-
+const [showFullDescription, setShowFullDescription] = useState(false);
   const net = Math.max(
     0,
     (Number(preparedItem.price) || 0) - (Number(discount) || 0)
@@ -123,7 +124,7 @@ export default function CheckoutPage() {
           const user = res.data?.result || {};
           setAddress({
             firstName: user.name || "John",
-            lastName: user.lastName || "Doe",
+            lastName: user.lastName || "",
             email: user.email || "",
             mobile: user.mobile || "",
             fullAddress: user.address || "",
@@ -472,7 +473,7 @@ export default function CheckoutPage() {
                       onClick={() => navigate("/signup")}
                       className="w-full bg-gray-100 hover:bg-gray-200 active:scale-95 text-gray-800 font-semibold py-3 rounded-lg transition duration-200"
                     >
-                     SignUp
+                      SignUp
                     </button>
                   </div>
                 ) : (
@@ -616,9 +617,9 @@ export default function CheckoutPage() {
           <div className="w-full lg:w-96">
             <div className="bg-white rounded-2xl shadow-md p-8 sticky top-10 space-y-6">
               <div>
-                <SafeImg
-                  src={preparedItem.thumbnail}
-                  alt={preparedItem.title}
+                <img
+                  src={checkoutImage}
+                  alt="Checkout Page"
                   className="w-full h-48 object-cover rounded-xl"
                 />
               </div>
@@ -627,17 +628,33 @@ export default function CheckoutPage() {
                 <h3 className="font-bold text-xl text-gray-900 mb-2">
                   {preparedItem.title}
                 </h3>
+
                 <p className="text-gray-600 text-sm">
-                  {preparedItem.description}
+                  {showFullDescription
+                    ? preparedItem.description
+                    : preparedItem.description?.slice(0, 80) +
+                      (preparedItem.description?.length > 80 ? "..." : "")}
+
+                  {preparedItem.description?.length > 80 && (
+                    <button
+                      className="text-blue-600 ml-2 text-xs underline"
+                      onClick={() =>
+                        setShowFullDescription(!showFullDescription)
+                      }
+                    >
+                      {showFullDescription ? "Show less" : "Read more"}
+                    </button>
+                  )}
                 </p>
               </div>
 
+              {/* 
               <div className="flex items-center justify-between text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
                 <span> Enrolled</span>
                 <span className="font-semibold text-gray-900">
                   {studentsDisplay}
                 </span>
-              </div>
+              </div> */}
 
               <div className="space-y-3 border-t border-b py-4">
                 <div className="flex justify-between text-gray-600">

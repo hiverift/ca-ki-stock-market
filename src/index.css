@@ -4,3 +4,7 @@ body {
   font-family: ui-sans-serif, system-ui, sans-serif;
 }
 
+/* in index.css or App.css */
+html, body, #root {
+  overflow-x: hidden;
+}

@@ -34,6 +34,7 @@ const AdminAppointment = () => {
   const [selectedTimes, setSelectedTimes] = useState([]);
   const [serviceId, setServiceId] = useState("");
   const [capacity, setCapacity] = useState("");
+  const [googleMeetLink, setGoogleMeetLink] = useState(""); // ⭐ NEW
 
   const [savedSlots, setSavedSlots] = useState([]);
   const [services, setServices] = useState([]);
@@ -80,6 +81,7 @@ const AdminAppointment = () => {
       to: formatDateLocal(toDate),
       capacity: Number(capacity),
       times: selectedTimes,
+      googleMeetLink: googleMeetLink, // ⭐ NEW
     };
 
     try {
@@ -119,6 +121,7 @@ const AdminAppointment = () => {
     setToDate(new Date());
     setSelectedTimes([]);
     setCapacity("");
+    setGoogleMeetLink(""); // ⭐ NEW RESET
   };
 
   const showPopup = (msg) => {
@@ -128,7 +131,6 @@ const AdminAppointment = () => {
 
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
-
       {popupMsg && (
         <div className="fixed top-5 right-5 bg-green-600 text-white px-4 py-2 rounded shadow">
           {popupMsg}
@@ -138,100 +140,114 @@ const AdminAppointment = () => {
       <h2 className="text-3xl font-bold text-center mb-6">Appointment Slot Manager</h2>
 
       {/* CREATE SLOT UI */}
-   <div className="bg-white p-6 rounded-xl shadow mb-6">
-  <h3 className="text-lg font-semibold mb-4">Create Slot</h3>
+      <div className="bg-white p-6 rounded-xl shadow mb-6">
+        <h3 className="text-lg font-semibold mb-4">Create Slot</h3>
 
-  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
 
-    {/* SERVICE */}
-    <div className="flex flex-col">
-      <label className="text-xs font-semibold text-gray-600 mb-1">Select Service</label>
-      <select
-        value={serviceId}
-        onChange={(e) => setServiceId(e.target.value)}
-        className="border p-2 rounded h-[42px]"
-      >
-        <option value="">Select Service</option>
-        {services.map((s) => (
-          <option key={s._id} value={s._id}>{s.name}</option>
-        ))}
-      </select>
-    </div>
+          {/* SERVICE */}
+          <div className="flex flex-col">
+            <label className="text-xs font-semibold text-gray-600 mb-1">Select Service</label>
+            <select
+              value={serviceId}
+              onChange={(e) => setServiceId(e.target.value)}
+              className="border p-2 rounded h-[42px]"
+            >
+              <option value="">Select Service</option>
+              {services.map((s) => (
+                <option key={s._id} value={s._id}>{s.name}</option>
+              ))}
+            </select>
+          </div>
 
-    {/* FROM DATE */}
-    <div className="flex flex-col">
-      <label className="text-xs font-semibold text-gray-600 mb-1">From Date</label>
-      <DatePicker
-        selected={fromDate}
-        onChange={setFromDate}
-        className="border p-2 rounded w-full h-[42px]"
-        minDate={new Date()}
-      />
-    </div>
+          {/* FROM DATE */}
+          <div className="flex flex-col">
+            <label className="text-xs font-semibold text-gray-600 mb-1">From Date</label>
+            <DatePicker
+              selected={fromDate}
+              onChange={setFromDate}
+              className="border p-2 rounded w-full h-[42px]"
+              minDate={new Date()}
+            />
+          </div>
 
-    {/* TO DATE */}
-    <div className="flex flex-col">
-      <label className="text-xs font-semibold text-gray-600 mb-1">To Date</label>
-      <DatePicker
-        selected={toDate}
-        onChange={setToDate}
-        className="border p-2 rounded w-full h-[42px]"
-        minDate={fromDate}
-      />
-    </div>
+          {/* TO DATE */}
+          <div className="flex flex-col">
+            <label className="text-xs font-semibold text-gray-600 mb-1">To Date</label>
+            <DatePicker
+              selected={toDate}
+              onChange={setToDate}
+              className="border p-2 rounded w-full h-[42px]"
+              minDate={fromDate}
+            />
+          </div>
 
-    {/* CAPACITY */}
-    <div className="flex flex-col">
-      <label className="text-xs font-semibold text-gray-600 mb-1">Capacity</label>
-      <input
-        type="number"
-        placeholder="Capacity"
-        value={capacity}
-        onChange={(e) => setCapacity(e.target.value)}
-        className="border p-2 rounded w-full h-[42px]"
-      />
-    </div>
+          {/* CAPACITY */}
+          <div className="flex flex-col">
+            <label className="text-xs font-semibold text-gray-600 mb-1">Capacity</label>
+            <input
+              type="number"
+              placeholder="Capacity"
+              value={capacity}
+              onChange={(e) => setCapacity(e.target.value)}
+              className="border p-2 rounded w-full h-[42px]"
+            />
+          </div>
 
-  </div>
+          {/* ⭐ GOOGLE MEET LINK */}
+          <div className="flex flex-col">
+            <label className="text-xs font-semibold text-gray-600 mb-1">Google Meet Link</label>
+            <input
+              type="text"
+              placeholder="Google meet link"
+              value={googleMeetLink}
+              onChange={(e) => setGoogleMeetLink(e.target.value)}
+              className="border p-2 rounded w-full h-[42px]"
+            />
+          </div>
 
-  {/* TIMES */}
-  <div className="mt-5">
-    <label className="text-xs font-semibold text-gray-600 mb-2 block">Select Time Slots</label>
-    <div className="grid grid-cols-4 gap-2">
-      {defaultTimes.map((t) => (
-        <button
-          key={t}
-          onClick={() => toggleTime(t)}
-          className={`rounded px-4 py-2 text-sm border 
-            ${selectedTimes.includes(t)
-              ? "bg-blue-600 text-white border-blue-700"
-              : "bg-gray-100 text-gray-800 border-gray-300"
-            }`}
-        >
-          {t}
-        </button>
-      ))}
-    </div>
-  </div>
+        </div>
 
-  {/* BUTTONS */}
-  <div className="mt-5 flex gap-3">
-    <button
-      onClick={handleSaveSlots}
-      className="bg-green-600 text-white px-5 py-2 rounded hover:bg-green-700 transition"
-    >
-      Save Slot
-    </button>
+        {/* TIMES */}
+        <div className="mt-5">
+          <label className="text-xs font-semibold text-gray-600 mb-2 block">
+            Select Time Slots
+          </label>
+          <div className="grid grid-cols-4 gap-2">
+            {defaultTimes.map((t) => (
+              <button
+                key={t}
+                onClick={() => toggleTime(t)}
+                className={`rounded px-4 py-2 text-sm border 
+                  ${
+                    selectedTimes.includes(t)
+                      ? "bg-blue-600 text-white border-blue-700"
+                      : "bg-gray-100 text-gray-800 border-gray-300"
+                  }`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+        </div>
 
-    <button
-      onClick={resetForm}
-      className="bg-gray-300 px-5 py-2 rounded hover:bg-gray-400 transition"
-    >
-      Clear
-    </button>
-  </div>
-</div>
+        {/* BUTTONS */}
+        <div className="mt-5 flex gap-3">
+          <button
+            onClick={handleSaveSlots}
+            className="bg-green-600 text-white px-5 py-2 rounded hover:bg-green-700 transition"
+          >
+            Save Slot
+          </button>
 
+          <button
+            onClick={resetForm}
+            className="bg-gray-300 px-5 py-2 rounded hover:bg-gray-400 transition"
+          >
+            Clear
+          </button>
+        </div>
+      </div>
 
       {/* SLOTS TABLE */}
       <div className="bg-white p-6 rounded-xl shadow">
@@ -245,6 +261,7 @@ const AdminAppointment = () => {
               <th className="p-3">Start Time</th>
               <th className="p-3">End Time</th>
               <th className="p-3">Capacity</th>
+              <th className="p-3">Google Meet Link</th> {/* ⭐ NEW */}
               <th className="p-3">Actions</th>
             </tr>
           </thead>
@@ -258,6 +275,22 @@ const AdminAppointment = () => {
                 <td className="p-3">{formatTime(slot.end)}</td>
                 <td className="p-3 font-semibold">{slot.capacity}</td>
 
+                {/* ⭐ SHOW MEET LINK */}
+                <td className="p-3">
+                  {slot.googleMeetLink ? (
+                    <a
+                      href={slot.googleMeetLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 underline break-all"
+                    >
+                      {slot.googleMeetLink}
+                    </a>
+                  ) : (
+                    <span className="text-gray-500">Not Added</span>
+                  )}
+                </td>
+
                 <td className="p-3">
                   <button
                     onClick={() => deleteSlot(slot._id)}
@@ -266,6 +299,7 @@ const AdminAppointment = () => {
                     Delete
                   </button>
                 </td>
+
               </tr>
             ))}
           </tbody>
