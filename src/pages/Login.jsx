@@ -29,19 +29,39 @@ function LoginPage() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    if (
-      (activeTab === "email" && !formData.email) ||
-      (activeTab === "mobile" && !formData.mobile)
-    ) {
-      Swal.fire("Error", "Please enter your credentials", "error");
+
+    // ---------------------- MOBILE VALIDATION ----------------------
+    if (activeTab === "mobile") {
+      if (!formData.mobile) {
+        Swal.fire("Error", "Please enter your mobile number", "error");
+        return;
+      }
+
+      // Must be 10 digits
+      if (formData.mobile.length !== 10) {
+        Swal.fire(
+          "Error",
+          "Please enter a valid 10-digit mobile number",
+          "error"
+        );
+        return;
+      }
+    }
+
+    // ---------------------- EMAIL VALIDATION ----------------------
+    if (activeTab === "email" && !formData.email) {
+      Swal.fire("Error", "Please enter your email", "error");
       return;
     }
+
+    // ---------------------- PASSWORD VALIDATION ----------------------
     if (!formData.password) {
       Swal.fire("Error", "Please enter your password", "error");
       return;
     }
 
     setLoading(true);
+
     try {
       const payload =
         activeTab === "email"
@@ -72,41 +92,28 @@ function LoginPage() {
 
       console.log("Login Response:", result);
 
-      //  if (user?.role === "admin") {
-      //   localStorage.setItem("admin", user._id);
-      //   localStorage.setItem("adminId", user._id);
-      //   navigate("/admin-dashboard");
-      // }
-
-      // if (user?.role === "user") {
-      //   localStorage.setItem("user", JSON.stringify(user));
-      //   localStorage.setItem("userId", user._id);
-      //   navigate("/user-dashboard");
-      // }
-      // Role-based redirect + storage (based on response.user.role)
+      // ---------------------- REDIRECT BY ROLE ----------------------
       if (user?.role === "admin") {
         setSuccessMsg("Login successful!");
 
-        // keep admin id for quick checks
         localStorage.setItem("accessToken", result.accessToken);
         localStorage.setItem("refreshToken", result.refreshToken);
         localStorage.setItem("admin", user._id);
         localStorage.setItem("adminId", user._id);
         localStorage.setItem("user", JSON.stringify(user));
+
         setTimeout(() => navigate("/admin-dashboard"), 800);
       } else if (user?.role === "user") {
         setSuccessMsg("Login successful!");
+
         localStorage.setItem("accessToken", result.accessToken);
         localStorage.setItem("refreshToken", result.refreshToken);
         localStorage.setItem("user", JSON.stringify(user));
         localStorage.setItem("userId", user._id);
+
         navigate("/user-dashboard");
       } else {
-        // If role missing or unknown, fallback to a generic dashboard or show message
-        console.warn(
-          "Unknown or missing user.role in login response:",
-          user?.role
-        );
+        console.warn("Unknown or missing user.role:", user?.role);
         navigate("/user-dashboard");
       }
     } catch (error) {
@@ -183,8 +190,17 @@ function LoginPage() {
                   type="text"
                   name="mobile"
                   value={formData.mobile}
-                  onChange={handleChange}
+                  onChange={(e) => {
+                    // Allow only digits
+                    const value = e.target.value.replace(/\D/g, "");
+
+                    // Maximum 10 digits allowed
+                    if (value.length <= 10) {
+                      setFormData({ ...formData, mobile: value });
+                    }
+                  }}
                   placeholder="Enter your mobile number"
+                  maxLength="10"
                   className="w-full pl-10 pr-10 py-2 border rounded-lg focus:ring-2 focus:ring-yellow-400 focus:outline-none"
                 />
               </div>

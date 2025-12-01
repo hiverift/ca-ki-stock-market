@@ -1,5 +1,12 @@
 import React, { useState } from "react";
-import { FaUser, FaEnvelope, FaPhoneAlt, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
+import {
+  FaUser,
+  FaEnvelope,
+  FaPhoneAlt,
+  FaLock,
+  FaEye,
+  FaEyeSlash,
+} from "react-icons/fa";
 import Swal from "sweetalert2";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -21,16 +28,35 @@ const SignUp = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    if (name === "mobile") {
+      if (/^\d{0,10}$/.test(value)) {
+        setFormData({ ...formData, mobile: value });
+      }
+      return;
+    }
+
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async () => {
     if (!agreed) {
-      Swal.fire("Error", "You must agree to the Terms and Privacy Policy", "error");
+      Swal.fire(
+        "Error",
+        "You must agree to the Terms and Privacy Policy",
+        "error"
+      );
       return;
     }
 
-    if (!formData.name || !formData.email || !formData.mobile || !formData.password || !formData.confirmPassword) {
+    if (
+      !formData.name ||
+      !formData.email ||
+      !formData.mobile ||
+      !formData.password ||
+      !formData.confirmPassword
+    ) {
       Swal.fire("Error", "Please fill all required fields", "error");
       return;
     }
@@ -58,32 +84,41 @@ const SignUp = () => {
         }
       );
 
-      // ✅ Check backend JSON statusCode
       if (response.data.statusCode === 403) {
-        Swal.fire("Error", "Email or mobile number already exists", "error");
+        Swal.fire("Error", response.data.message, "error");
         return;
       }
 
       // Success if no errors
-      Swal.fire("Success", "Account created successfully!", "success").then(() => {
-        setFormData({
-          name: "",
-          email: "",
-          mobile: "",
-          password: "",
-          confirmPassword: "",
-        });
-        setAgreed(false);
-        setKycNow(false);
-        navigate("/login");
-      });
+      Swal.fire("Success", "Account created successfully!", "success").then(
+        () => {
+          setFormData({
+            name: "",
+            email: "",
+            mobile: "",
+            password: "",
+            confirmPassword: "",
+          });
+          setAgreed(false);
+          setKycNow(false);
+          navigate("/login");
+        }
+      );
     } catch (error) {
       console.log("Error caught:", error.response);
 
       if (error.response) {
-        Swal.fire("Error", error.response.data.message || "Something went wrong!", "error");
+        Swal.fire(
+          "Error",
+          error.response.data.message || "Something went wrong!",
+          "error"
+        );
       } else if (error.request) {
-        Swal.fire("Error", "No response from server. Please try again later.", "error");
+        Swal.fire(
+          "Error",
+          "No response from server. Please try again later.",
+          "error"
+        );
       } else {
         Swal.fire("Error", error.message, "error");
       }
@@ -93,9 +128,29 @@ const SignUp = () => {
   };
 
   const fields = [
-    { label: "Full Name", icon: <FaUser />, type: "text", name: "name", placeholder: "Enter your full name" },
-    { label: "Email Address", icon: <FaEnvelope />, type: "email", name: "email", placeholder: "Enter your email address" },
-    { label: "Mobile Number", icon: <FaPhoneAlt />, type: "tel", name: "mobile", placeholder: "Enter your mobile number" },
+    {
+      label: "Full Name",
+      icon: <FaUser />,
+      type: "text",
+      name: "name",
+      placeholder: "Enter your full name",
+    },
+    {
+      label: "Email Address",
+      icon: <FaEnvelope />,
+      type: "email",
+      name: "email",
+      placeholder: "Enter your email address",
+    },
+    {
+      label: "Mobile Number",
+      icon: <FaPhoneAlt />,
+      minLength: 10,
+      maxLength: 10,
+      type: "tel",
+      name: "mobile",
+      placeholder: "Enter your mobile number",
+    },
     {
       label: "Password",
       icon: <FaLock />,
@@ -119,14 +174,20 @@ const SignUp = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 px-4">
       <div className="text-center mb-6">
-        <h2 className="text-3xl font-bold text-gray-900">Create Your Account</h2>
-        <p className="text-sm text-gray-600">Join thousands of successful traders</p>
+        <h2 className="text-3xl font-bold text-gray-900">
+          Create Your Account
+        </h2>
+        <p className="text-sm text-gray-600">
+          Join thousands of successful traders
+        </p>
       </div>
 
       <div className="max-w-md w-full bg-white p-8 rounded-xl shadow-lg">
         {fields.map((field, idx) => (
           <div key={idx} className="mb-4">
-            <label className="block text-sm font-semibold text-gray-800 mb-1">{field.label}</label>
+            <label className="block text-sm font-semibold text-gray-800 mb-1">
+              {field.label}
+            </label>
             <div className="flex items-center border border-gray-300 rounded-md px-3 py-2 bg-white focus-within:ring-2 focus-within:ring-blue-500">
               <span className="text-gray-500 mr-2">{field.icon}</span>
               <div className="relative w-full">
@@ -139,7 +200,8 @@ const SignUp = () => {
                   className="w-full bg-transparent outline-none text-sm text-gray-700 pr-8"
                   autoComplete={field.name}
                 />
-                {(field.name === "password" || field.name === "confirmPassword") && (
+                {(field.name === "password" ||
+                  field.name === "confirmPassword") && (
                   <span
                     onClick={field.toggleShow}
                     className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer"
@@ -161,7 +223,10 @@ const SignUp = () => {
             onChange={() => setKycNow(!kycNow)}
           />
           <label htmlFor="kyc" className="text-sm text-gray-700">
-            I want to complete KYC now <span className="text-gray-500">(Optional - can be done later)</span>
+            I want to complete KYC now{" "}
+            <span className="text-gray-500">
+              (Optional - can be done later)
+            </span>
           </label>
         </div>
 
@@ -174,7 +239,14 @@ const SignUp = () => {
             onChange={() => setAgreed(!agreed)}
           />
           <label htmlFor="terms" className="text-sm text-gray-700">
-            I agree to the <a href="#" className="text-blue-600 hover:underline">Terms of Service</a> and <a href="#" className="text-blue-600 hover:underline">Privacy Policy</a>
+            I agree to the{" "}
+            <a href="#" className="text-blue-600 hover:underline">
+              Terms of Service
+            </a>{" "}
+            and{" "}
+            <a href="#" className="text-blue-600 hover:underline">
+              Privacy Policy
+            </a>
           </label>
         </div>
 
@@ -191,12 +263,16 @@ const SignUp = () => {
         </button>
 
         <p className="text-sm text-center mt-6">
-          Already have an account? <a href="/login" className="text-blue-600 hover:underline">Sign In here</a>
+          Already have an account?{" "}
+          <a href="/login" className="text-blue-600 hover:underline">
+            Sign In here
+          </a>
         </p>
       </div>
 
       <p className="text-xs text-center text-gray-500 mt-4 pt-4">
-        We use industry-standard encryption to protect your personal <br /> information
+        We use industry-standard encryption to protect your personal <br />{" "}
+        information
       </p>
     </div>
   );

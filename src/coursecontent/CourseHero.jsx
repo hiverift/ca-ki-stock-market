@@ -190,16 +190,22 @@ export default function CourseHero() {
                       by {course.instructor || "Unknown"}
                     </p>
                   </div>
+                  <div className="mt-3 px-3">
+                    <ul className="list-disc pl-5 text-gray-700 text-sm space-y-1">
+                      {(expanded[course._id]
+                        ? course.description?.split("\n")
+                        : course.description?.split("\n")?.slice(0, 3)
+                      )
+                        ?.filter((line) => line.trim() !== "")
+                        .map((line, index) => (
+                          <li key={index}>{line}</li>
+                        ))}
+                    </ul>
 
-                  <p className="text-gray-700 text-sm mt-2 px-3 leading-snug">
-                    {expanded[course._id]
-                      ? course.description
-                      : course.description?.slice(0, 80) +
-                        (course.description?.length > 80 ? "..." : "")}
-
-                    {course.description?.length > 80 && (
+                    {/* Read More / Show Less Button */}
+                    {course.description?.split("\n")?.length > 3 && (
                       <button
-                        className="text-blue-600 ml-2 text-xs underline"
+                        className="text-blue-600 text-xs mt-1 underline"
                         onClick={() =>
                           setExpanded((prev) => ({
                             ...prev,
@@ -210,7 +216,7 @@ export default function CourseHero() {
                         {expanded[course._id] ? "Show less" : "Read more"}
                       </button>
                     )}
-                  </p>
+                  </div>
 
                   <div className="flex gap-4 flex-wrap items-center text-xs text-gray-500 mt-2 px-3">
                     <span className="flex items-center gap-1">

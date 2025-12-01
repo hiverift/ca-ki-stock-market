@@ -1,9 +1,10 @@
 import React from "react";
+import profilePic from "../assets/image/image (1).png";
 import { RiStarSFill } from "react-icons/ri";
 import { HiOutlineBadgeCheck } from "react-icons/hi";
 import { FaBullseye } from "react-icons/fa";
 import { Link } from "react-router-dom";
-import Menpic from "../assets/image/men.jpg"
+import Menpic from "../assets/image/men.jpg";
 
 const MentorCard = () => {
   return (
@@ -21,7 +22,7 @@ const MentorCard = () => {
         {/* Left: Image + Stars */}
         <div className="flex flex-col items-center md:w-1/3">
           <img
-            src={Menpic}
+            src={profilePic}
             alt="Mentor"
             className="w-36 h-36 rounded-full object-cover shadow-md"
           />
@@ -37,7 +38,8 @@ const MentorCard = () => {
           <div>
             <h3 className="text-xl  text-gray-900">CA Paras Muradia</h3>
             <div className="flex items-center text-gray-600 text-sm mt-1 gap-1">
-              <HiOutlineBadgeCheck className="text-yellow-500" /> Chartered Accountant
+              <HiOutlineBadgeCheck className="text-yellow-500" /> Chartered
+              Accountant
             </div>
           </div>
 
@@ -53,9 +55,9 @@ const MentorCard = () => {
             <FaBullseye className="text-yellow-500 mt-1" />
             <p>
               <span className="font-semibold">Mission: </span>
-              Provide affordable, transparent & authentic financial education to help
-              individuals make informed investment decisions and achieve financial
-              independence through legal and secure trading practices.
+              Provide affordable, transparent & authentic financial education to
+              help individuals make informed investment decisions and achieve
+              financial independence through legal and secure trading practices.
             </p>
           </div>
 
