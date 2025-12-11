@@ -3,7 +3,7 @@ import client from "../client"; // path check kar lo: agar client ka location al
 
 export default async function ApiLogin({ email, password }: { email: string; password: string }) {
   // agar backend cookie-based auth use karta hai to withCredentials:true helpful hai
-  const res = await client.post("/auth/login", { email, password, role: "user" }, { withCredentials: true });
+  const res = await client.post("auth/login", { email, password, role: "user" }, { withCredentials: true });
 
   console.log("Full login response (res.data):", res.data);
 

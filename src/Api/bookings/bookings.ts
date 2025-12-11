@@ -1,14 +1,14 @@
 import client from "../client";
 
 export async function getServices() {
-  const res = await client.get('/services');
+  const res = await client.get('services');
   // our backend returns CustomResponse => { statusCode, message, result }
   return res.data.result ?? res.data;
 }
 
 // month format: "2025-09"
 export async function getAvailability(serviceId: any, month: string) {
-  const res = await client.get(`/availability/${serviceId}?month=${month}`);
+  const res = await client.get(`availability/${serviceId}?month=${month}`);
   console.log('res availivility',res)
   return res.data.result ?? res.data;
 }
@@ -22,7 +22,7 @@ interface CreateBookingParams {
 }
 
 export async function createBooking({ serviceId, slotId, userId, paymentMethod = 'mock' }: CreateBookingParams) {
-  const res = await client.post('/bookings', { serviceId, slotId, userId, paymentMethod });
+  const res = await client.post('bookings', { serviceId, slotId, userId, paymentMethod });
   return res.data.result ?? res.data;
 }
 

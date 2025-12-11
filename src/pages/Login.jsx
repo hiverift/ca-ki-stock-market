@@ -75,7 +75,7 @@ function LoginPage() {
             };
 
       const response = await axios.post(
-        `${config.BASE_URL}/auth/login`,
+        `${config.BASE_URL}auth/login`,
         payload,
         {
           headers: { "Content-Type": "application/json" },
