@@ -12,8 +12,7 @@ import {
 } from "react-icons/fa";
 import { Calendar, Clock, Users, Video } from "lucide-react";
 import Footer from "./Footer";
-
-const API_BASE = "https://www.cakistockmarket.com/api/v1";
+import config from "./config";
 
 const Webinars = () => {
   const [webinars, setWebinars] = useState([]);
@@ -34,7 +33,7 @@ const Webinars = () => {
   useEffect(() => {
     const fetchWebinars = async () => {
       try {
-        const res = await fetch(`${API_BASE}/webinars`);
+        const res = await fetch(`${config.BASE_URL}/webinars`);
         const data = await res.json();
 
         if (data?.statusCode === 200 && Array.isArray(data.result)) {
