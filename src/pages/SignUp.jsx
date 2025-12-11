@@ -70,7 +70,7 @@ const SignUp = () => {
 
     try {
       const response = await axios.post(
-        `${config.BASE_URL}auth/register`,
+        `${config.BASE_URL}/auth/register`,
         {
           name: formData.name,
           email: formData.email,
